@@ -7,7 +7,7 @@ from backend import (UsuarioFactory, GestorPedidos, Pedido,
                      PagoTarjeta, PagoPaypal)
 
 class ConsolaRedirector:
-    """Redirige el stdout (print) al widget Text de Tkinter."""
+    """Redirige el texto de backend a interfaz tkinter"""
     def __init__(self, text_widget):
         self.text_widget = text_widget
 
@@ -59,9 +59,9 @@ class DeliveryApp:
         self.tab_pedido = ttk.Frame(notebook)
         self.tab_consola = ttk.Frame(notebook)
 
-        notebook.add(self.tab_gestion, text='👤 1. Gestión (CRUD)')
-        notebook.add(self.tab_pedido, text='🛒 2. Nuevo Pedido')
-        notebook.add(self.tab_consola, text='🖥️ 3. Consola / Tracking')
+        notebook.add(self.tab_gestion, text=' 1. Gestión (CRUD)')
+        notebook.add(self.tab_pedido, text=' 2. Nuevo Pedido')
+        notebook.add(self.tab_consola, text=' 3. Consola / Tracking')
 
         self._construir_tab_gestion()
         self._construir_tab_pedido()
@@ -74,29 +74,29 @@ class DeliveryApp:
         frame = ttk.LabelFrame(self.tab_gestion, text="Creación Rápida de Entidades", padding=20)
         frame.pack(fill='x', padx=20, pady=20)
 
-        btn_cliente = ttk.Button(frame, text="Crear Cliente (Ana)", command=self._crear_cliente)
+        btn_cliente = ttk.Button(frame, text="Crear Cliente (Antonia)", command=self._crear_cliente)
         btn_cliente.pack(side='left', padx=10, expand=True)
 
-        btn_restaurante = ttk.Button(frame, text="Crear Restaurante (Luigi's)", command=self._crear_restaurante)
+        btn_restaurante = ttk.Button(frame, text="Crear Restaurante (Papa Johns)", command=self._crear_restaurante)
         btn_restaurante.pack(side='left', padx=10, expand=True)
 
-        btn_repartidor = ttk.Button(frame, text="Crear Repartidor (Carlos)", command=self._crear_repartidor)
+        btn_repartidor = ttk.Button(frame, text="Crear Repartidor (Esteban)", command=self._crear_repartidor)
         btn_repartidor.pack(side='left', padx=10, expand=True)
 
     def _crear_cliente(self):
-        cliente = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Ana", email="ana@mail.com", direccion="Av. Siempre Viva 123")
+        cliente = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Antonia", email="antonia@mail.com", direccion="Manuel Rodriguez 1874")
         self.clientes.append(cliente)
         print(f"[*] Creado: {cliente.obtenerDatos()}")
 
     def _crear_restaurante(self):
-        menu_italiano = [{'item': 'Pizza Margarita', 'precio': 12.5}, {'item': 'Lasagna', 'precio': 15.0}]
-        restaurante = UsuarioFactory.crear_usuario("Restaurante", id=101, nombre="Luigi's", email="contacto@luigis.com", menu=menu_italiano)
+        menu_italiano = [{'item': 'Pizza Margarita', 'precio': 12.5}, {'item': 'Palitos de ajo', 'precio': 5.0}]
+        restaurante = UsuarioFactory.crear_usuario("Restaurante", id=101, nombre="Papa Johns", email="contacto@papajohns.com", menu=menu_italiano)
         self.restaurantes.append(restaurante)
         self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes] # Actualizar UI de pedidos
         print(f"[*] Creado: {restaurante.obtenerDatos()}")
 
     def _crear_repartidor(self):
-        repartidor = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Carlos", email="carlos@delivery.com", vehiculo="Moto Honda")
+        repartidor = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Esteban", email="esteban@delivery.com", vehiculo="Moto Suzuki")
         self.repartidores.append(repartidor)
         print(f"[*] Creado: {repartidor.obtenerDatos()}")
 
@@ -192,7 +192,7 @@ class DeliveryApp:
             repartidor.disponible = False
             print(f"Asignación Automática: Repartidor {repartidor.nombre} asignado.")
         else:
-            print("❌ No hay repartidores disponibles.")
+            print(" No hay repartidores disponibles.")
             return
 
         # 3. Inyección de Dependencias (Estrategia de Pago)

@@ -7,9 +7,10 @@ from typing import List, Dict, Optional
 
 class MetodoPago(ABC):
     """
-    [Principio OCP] Abierto a extensión, cerrado a modificación.
-    Si mañana necesitas agregar ApplePay, solo creas una nueva clase
-    que herede de MetodoPago sin tocar el GestorPedidos.
+    [Principio OCP] Abierto a extension pero cerrado a modificacion
+    En caso que queramos agregar cualquier metodo de pago extra (Appleplay, crypto, etc)
+    Unicamente creamos esa nueva clase que herede de metodo pago
+    sin tocar el GestorPedidos. Asi no modificamos codigo ya funcional
     """
     @abstractmethod
     def procesarPago(self, monto: float) -> bool:
@@ -17,17 +18,16 @@ class MetodoPago(ABC):
 
 class PagoTarjeta(MetodoPago):
     def procesarPago(self, monto: float) -> bool:
-        print(f"💳 Procesando pago de ${monto:.2f} mediante Tarjeta de Crédito...")
-        return True # Simulación exitosa
+        print(f"Procesando pago de ${monto:.2f} mediante Tarjeta de Crédito...")
+        return True 
 
 class PagoPaypal(MetodoPago):
     def procesarPago(self, monto: float) -> bool:
-        print(f"🅿️ Procesando pago de ${monto:.2f} mediante PayPal...")
-        return True # Simulación exitosa
-
+        print(f"Procesando pago de ${monto:.2f} mediante PayPal...")
+        return True 
 class SistemaNotificacion:
     def enviarMensaje(self, email: str, msj: str):
-        print(f"📧 [Notificación a {email}]: {msj}")
+        print(f"[Notificación a {email}]: {msj}")
 
 
 # ==========================================
@@ -53,18 +53,18 @@ class Cliente(Usuario):
         return f"Cliente: {self.nombre} | Email: {self.email} | Dirección: {self.direccionEntrega}"
 
     def realizarPedido(self):
-        print(f"🛍️ El cliente {self.nombre} está iniciando un pedido.")
+        print(f"El cliente {self.nombre} está iniciando un pedido.")
 
 class Restaurante(Usuario):
     def __init__(self, id_usuario: int, nombre: str, email: str, menu: List[Dict]):
         super().__init__(id_usuario, nombre, email)
-        self.menu = menu # Ejemplo: [{'item': 'Pizza', 'precio': 15.0}]
+        self.menu = menu # Ejemplo: [{'item': 'Completo', 'precio': 15.0}]
 
     def obtenerDatos(self) -> str:
         return f"Restaurante: {self.nombre} | Items en menú: {len(self.menu)}"
 
     def prepararPedido(self, pedido: 'Pedido'):
-        print(f"👨‍🍳 Restaurante {self.nombre} está preparando el pedido #{pedido.id}.")
+        print(f"Restaurante {self.nombre} está preparando el pedido #{pedido.id}.")
         pedido.actualizarEstado("En Preparación")
 
 class Repartidor(Usuario):
@@ -78,12 +78,12 @@ class Repartidor(Usuario):
         return f"Repartidor: {self.nombre} | Vehículo: {self.vehiculo} | Estado: {estado}"
 
     def actualizarUbicacion(self):
-        print(f"📍 Ubicación de {self.nombre} actualizada.")
+        print(f" Ubicación de {self.nombre} actualizada.")
 
     def completarEntrega(self, pedido: 'Pedido'):
         pedido.actualizarEstado("Entregado")
         self.disponible = True
-        print(f"✅ Repartidor {self.nombre} ha entregado el pedido #{pedido.id}.")
+        print(f" Repartidor {self.nombre} ha entregado el pedido #{pedido.id}.")
 
 
 # ==========================================
@@ -91,8 +91,8 @@ class Repartidor(Usuario):
 # ==========================================
 class UsuarioFactory:
     """
-    [Factory Method] Encapsula la lógica de instanciación de los distintos tipos de usuarios.
-    Mantiene el código cliente limpio de constructores complejos.
+    Factory Method: Centraliza como se crean los usuarios. 
+    Nos ahorra tener que armar objetos a mano en el flujo principal y mantiene el código limpio.
     """
     @staticmethod
     def crear_usuario(tipo: str, **kwargs) -> Usuario:
@@ -106,7 +106,7 @@ class UsuarioFactory:
 
 
 # ==========================================
-# CLASES CORE Y LÓGICA DE NEGOCIO
+#LÓGICA DE NEGOCIO
 # ==========================================
 
 class Pedido:
@@ -117,7 +117,7 @@ class Pedido:
         self.cliente = cliente
         self.restaurante = restaurante
         self.repartidor: Optional[Repartidor] = None
-        self.items_comprados = items_comprados # Lista de items seleccionados del menú
+        self.items_comprados = items_comprados # Lista de items seleccionados del menu
 
     def calcularTotal(self) -> float:
         """[Principio SRP] El pedido es responsable de calcular su propio total."""
@@ -126,7 +126,7 @@ class Pedido:
 
     def actualizarEstado(self, nuevoEstado: str):
         self.estado = nuevoEstado
-        print(f"🔄 Pedido #{self.id} cambió de estado a: '{self.estado}'")
+        print(f"Pedido #{self.id} cambió de estado a: '{self.estado}'")
 
 
 class GestorPedidos:
@@ -169,12 +169,12 @@ if __name__ == "__main__":
     print("--- INICIANDO SISTEMA DE DELIVERY ---")
     
     # 1. Crear clientes, restaurantes y repartidores (Usando Factory)
-    cliente1 = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Ana", email="ana@mail.com", direccion="Av. Siempre Viva 123")
+    cliente1 = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Antonia", email="antonia@mail.com", direccion="Manuel Rodriguez 1874")
     
-    menu_italiano = [{'item': 'Pizza Margarita', 'precio': 12.5}, {'item': 'Lasagna', 'precio': 15.0}]
-    restaurante1 = UsuarioFactory.crear_usuario("Restaurante", id=101, nombre="Luigi's", email="contacto@luigis.com", menu=menu_italiano)
+    menu_italiano = [{'item': 'Pizza Margarita', 'precio': 12.5}, {'item': 'Palitos de ajo', 'precio': 5.0}]
+    restaurante1 = UsuarioFactory.crear_usuario("Restaurante", id=101, nombre="Papa Johns", email="contacto@papajohns.com", menu=menu_italiano)
     
-    repartidor1 = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Carlos", email="carlos@delivery.com", vehiculo="Moto Honda")
+    repartidor1 = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Esteban", email="esteban@delivery.com", vehiculo="Moto Suzuki")
     
     print("\n--- VISUALIZACIÓN DE ENTIDADES ---")
     print(cliente1.obtenerDatos())
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     print(repartidor1.obtenerDatos())
 
     # 2. Modificar el estado de disponibilidad de un repartidor
-    # Simulamos que Carlos terminó su turno temporalmente
+    # Simulamos que Estebam terminó su turno temporalmente
     repartidor1.disponible = False
     print(f"\nDisponibilidad de {repartidor1.nombre} actualizada a: {repartidor1.disponible}")
     # Lo volvemos a poner disponible para el flujo principal
@@ -195,7 +195,7 @@ if __name__ == "__main__":
 
     # 4. Crear un nuevo pedido vinculando cliente y restaurante
     cliente1.realizarPedido()
-    items_pedidos = [restaurante1.menu[0], restaurante1.menu[1]] # Compra una pizza y una lasagna
+    items_pedidos = [restaurante1.menu[0], restaurante1.menu[1]] # Compra una pizza y palitos de ajo
     pedido1 = Pedido(id_pedido=1001, cliente=cliente1, restaurante=restaurante1, items_comprados=items_pedidos)
 
     # 5. Calcular el total del pedido
@@ -203,7 +203,6 @@ if __name__ == "__main__":
     print(f"Total calculado del pedido #{pedido1.id}: ${total_a_pagar:.2f}")
 
     # 6. Asignar automáticamente un repartidor disponible
-    # En un sistema real esto buscaría en una lista (CRUD), aquí iteramos una simulada
     lista_repartidores = [repartidor1]
     for rep in lista_repartidores:
         if rep.disponible:
@@ -214,7 +213,7 @@ if __name__ == "__main__":
 
     # 7. Procesar el pago utilizando polimorfismo
     gestor = GestorPedidos() # Instancia Singleton
-    # Inyectamos el método de pago concreto (puede cambiarse en tiempo de ejecución por PagoPaypal())
+    # Inyectamos el método de pago concreto 
     gestor.configurar_metodo_pago(PagoTarjeta()) 
 
     # 8 y 9. Confirmar pedido (envía notificaciones y cambia estados internamente)
