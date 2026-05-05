@@ -183,7 +183,7 @@ if __name__ == "__main__":
     print(repartidor1.obtenerDatos())
 
     # 2. Modificar el estado de disponibilidad de un repartidor
-    # Simulamos que Estebam terminó su turno temporalmente
+    # Simulamos que Esteban terminó su turno temporalmente
     repartidor1.disponible = False
     print(f"\nDisponibilidad de {repartidor1.nombre} actualizada a: {repartidor1.disponible}")
     # Lo volvemos a poner disponible para el flujo principal
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
     # 4. Crear un nuevo pedido vinculando cliente y restaurante
     cliente1.realizarPedido()
-    items_pedidos = [restaurante1.menu[0], restaurante1.menu[1]] # Compra una pizza y palitos de ajo
+    items_pedidos = [restaurante1.menu[0], restaurante1.menu[1]] # Ejemplo: compra una pizza y palitos de ajo
     pedido1 = Pedido(id_pedido=1001, cliente=cliente1, restaurante=restaurante1, items_comprados=items_pedidos)
 
     # 5. Calcular el total del pedido
