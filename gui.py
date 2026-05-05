@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
 
-# Importamos las clases intactas desde tu backend
+# Importamos las clases intactas desde el backend
 from backend import (UsuarioFactory, GestorPedidos, Pedido, 
                      PagoTarjeta, PagoPaypal)
 
