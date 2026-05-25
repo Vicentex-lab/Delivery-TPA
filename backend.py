@@ -36,19 +36,30 @@ class SistemaNotificacion:
 # ==========================================
 
 class Usuario(ABC):
-    def __init__(self, id_usuario: int, nombre: str, email: str):
+    def __init__(self, id_usuario: int, nombre: str, email: str, contraseña: str = "1234"): # Asigno contraseña por defecto "1234" temporalmente
         self.id = id_usuario
-        self.nombre = nombre
+        self.nombre = nombre # se utiliza como nombre_usuario en la validación del login
         self.email = email
+        self.contraseña = contraseña # nuevo atributo que almacena credencial de acceso
+    
+      
+    @property #implementa un atributo de solo lectura que devuelve el tipo de rol como string
+    @abstractmethod
+    def rol(self) -> str:
+        pass 
 
     @abstractmethod
     def obtenerDatos(self) -> str:
         pass
 
 class Cliente(Usuario):
-    def __init__(self, id_usuario: int, nombre: str, email: str, direccionEntrega: str):
-        super().__init__(id_usuario, nombre, email)
+    def __init__(self, id_usuario: int, nombre: str, email: str, direccionEntrega: str, contraseña: str = "1234"):
+        super().__init__(id_usuario, nombre, email, contraseña)
         self.direccionEntrega = direccionEntrega
+        
+    @property
+    def rol(self) -> str:
+        return "Cliente"
 
     def obtenerDatos(self) -> str:
         return f"Cliente: {self.nombre} | Email: {self.email} | Dirección: {self.direccionEntrega}"
@@ -57,9 +68,13 @@ class Cliente(Usuario):
         print(f"El cliente {self.nombre} está iniciando un pedido.")
 
 class Restaurante(Usuario):
-    def __init__(self, id_usuario: int, nombre: str, email: str, menu: List[Dict]):
-        super().__init__(id_usuario, nombre, email)
+    def __init__(self, id_usuario: int, nombre: str, email: str, menu: List[Dict], contraseña: str = "1234"):
+        super().__init__(id_usuario, nombre, email, contraseña)
         self.menu = menu # Ejemplo: [{'item': 'Completo', 'precio': 15.0}]
+        
+    @property
+    def rol(self) -> str:
+        return "Restaurante"    
 
     def obtenerDatos(self) -> str:
         return f"Restaurante: {self.nombre} | Items en menú: {len(self.menu)}"
@@ -69,10 +84,14 @@ class Restaurante(Usuario):
         pedido.actualizarEstado("En Preparación")
 
 class Repartidor(Usuario):
-    def __init__(self, id_usuario: int, nombre: str, email: str, vehiculo: str):
-        super().__init__(id_usuario, nombre, email)
+    def __init__(self, id_usuario: int, nombre: str, email: str, vehiculo: str, contraseña: str = "1234"):
+        super().__init__(id_usuario, nombre, email, contraseña)
         self.vehiculo = vehiculo
         self.disponible = True
+        
+    @property
+    def rol(self) -> str:
+        return "Repartidor"
 
     def obtenerDatos(self) -> str:
         estado = "Disponible" if self.disponible else "Ocupado"
@@ -98,11 +117,11 @@ class UsuarioFactory:
     @staticmethod
     def crear_usuario(tipo: str, **kwargs) -> Usuario:
         if tipo == "Cliente":
-            return Cliente(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs['direccion'])
+            return Cliente(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs['direccion'], kwargs.get('contraseña', '1234')) #si no hay contraseña, asigna una genérica 1234
         elif tipo == "Restaurante":
-            return Restaurante(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs.get('menu', []))
+            return Restaurante(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs.get('menu', []), kwargs.get('contraseña', '1234') )
         elif tipo == "Repartidor":
-            return Repartidor(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs['vehiculo'])
+            return Repartidor(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs['vehiculo'], kwargs.get('contraseña', '1234'))
         raise ValueError("Tipo de usuario no soportado.")
 
 
@@ -136,6 +155,9 @@ class GestorPedidos:
     [Principio DIP] Depende de la abstracción MetodoPago, no de implementaciones concretas.
     """
     _instancia = None
+    
+    #type hinting
+    usuarios_registrados: List[Usuario]
 
     def __new__(cls):
         if cls._instancia is None:
@@ -143,7 +165,28 @@ class GestorPedidos:
             # Inicialización de atributos agregados
             cls._instancia.procesadorPago = None 
             cls._instancia.notificador = SistemaNotificacion()
+            cls._instancia.usuarios_registrados = [] # Lista global simulada de persistencia de datos para el login
         return cls._instancia
+    
+    
+    def registrar_usuario_sistema(self, usuario: Usuario):
+        """Método auxiliar para que el backend reconozca a los usuarios creados"""
+        self.usuarios_registrados.append(usuario)
+        
+        
+    def validar_login(self, nombre_usuario: str, contraseña_ingresada: str) -> Optional[str]:
+        """
+        [Funcionalidad 1 - Backend] 
+        Recibe las credenciales de la GUI, busca coincidencia y retorna el Rol si es exitoso.
+        Retorna None si las credenciales son incorrectas.
+        """
+        for usuario in self.usuarios_registrados:
+            if usuario.nombre == nombre_usuario and usuario.contraseña == contraseña_ingresada:
+                print(f"[Login] Acceso concedido a {usuario.nombre} con el rol: {usuario.rol}")
+                return usuario.rol  # Devuelve "Cliente", "Restaurante" o "Repartidor"
+        
+        print(f"[Login Fallido] Intento fallido de inicio de sesión para el usuario: {nombre_usuario}")
+        return None
 
     def configurar_metodo_pago(self, metodo: MetodoPago):
         """Inyección de dependencias para el procesador de pagos."""
@@ -240,3 +283,26 @@ if __name__ == "__main__":
     for item in pedido1.items_comprados:
          print(f" - {item['item']}: ${item['precio']}")
     print(f"TOTAL PAGADO: ${pedido1.total:.2f}")
+    
+    
+    
+    #Script func. 1
+    """
+    # === PRUEBA DE FUNCIONALIDAD 1: VALIDACIÓN DE LOGIN ===
+    print("\n--- PROBANDO FUNCIONALIDAD 1: VALIDACIÓN DE LOGIN ---")
+    gestor = GestorPedidos()
+    
+    # Asignamos una contraseña personalizada a un usuario de prueba
+    cliente_login = UsuarioFactory.crear_usuario("Cliente", id=2, nombre="Vicente", email="v.cardenas@mail.com", direccion="Av. Central 123", contraseña="securePass123")
+    
+    # Registramos al usuario en el listado del gestor
+    gestor.registrar_usuario_sistema(cliente_login)
+    
+    # Intento 1: Credenciales incorrectas
+    resultado_fallido = gestor.validar_login("Vicente", "clave_erronea")
+    print(f"Resultado esperado (None): {resultado_fallido}")
+    
+    # Intento 2: Credenciales correctas
+    resultado_exitoso = gestor.validar_login("Vicente", "securePass123")
+    print(f"Resultado esperado ('Cliente'): {resultado_exitoso}")
+"""
