@@ -3,8 +3,9 @@ from tkinter import ttk, messagebox
 import sys
 
 # Importamos las clases intactas desde el backend
-from backend import (UsuarioFactory, GestorPedidos, Pedido, 
-                     PagoTarjeta, PagoPaypal)
+from backend.logica_negocio import GestorPedidos
+from backend.usuarios import UsuarioFactory, Pedido
+from backend.interfaces import PagoTarjeta, PagoPaypal
 
 class ConsolaRedirector:
     """Redirige el texto de backend a interfaz tkinter"""
@@ -84,7 +85,7 @@ class DeliveryApp:
         btn_repartidor.pack(side='left', padx=10, expand=True)
 
     def _crear_cliente(self):
-        cliente = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Antonia", email="antonia@mail.com", direccion="Manuel Rodriguez 1874")
+        cliente = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Antonia", email="antonia@mail.com", direccion="Manuel Rodriguez 1874", contraseña="1234")
         self.clientes.append(cliente)
         print(f"[*] Creado: {cliente.obtenerDatos()}")
 
@@ -96,7 +97,7 @@ class DeliveryApp:
         print(f"[*] Creado: {restaurante.obtenerDatos()}")
 
     def _crear_repartidor(self):
-        repartidor = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Esteban", email="esteban@delivery.com", vehiculo="Moto Suzuki")
+        repartidor = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Esteban", email="esteban@delivery.com", vehiculo="Moto Suzuki", contraseña="1234")
         self.repartidores.append(repartidor)
         print(f"[*] Creado: {repartidor.obtenerDatos()}")
 
@@ -181,7 +182,7 @@ class DeliveryApp:
         cliente.realizarPedido()
         
         # 1. Crear Pedido
-        pedido = Pedido(id_pedido=1001, cliente=cliente, restaurante=restaurante, items_comprados=self.carrito.copy())
+        pedido = Pedido(id_pedido=1001, cliente=cliente, restaurante=restaurante, items_comprados=list(self.carrito))
         total = pedido.calcularTotal()
         print(f"Total a pagar: ${total:.2f}")
 
