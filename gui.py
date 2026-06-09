@@ -2,47 +2,279 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
 
-# Importamos las clases intactas desde el backend
 from backend.logica_negocio import GestorPedidos
 from backend.usuarios import UsuarioFactory, Pedido
 from backend.interfaces import PagoTarjeta, PagoPaypal
 
+
+# ==========================================
+# FUNCIONALIDAD 1: VENTANA DE LOGIN
+# ==========================================
+class VentanaLogin:
+    def __init__(self, gestor: GestorPedidos, callback_exito):
+        self.gestor = gestor
+        self.callback_exito = callback_exito
+
+        self.ventana = tk.Toplevel()
+        self.ventana.title("Iniciar Sesión")
+        self.ventana.geometry("350x220")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        self._construir_formulario()
+
+    def _construir_formulario(self):
+        frame = ttk.Frame(self.ventana, padding=30)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text="Sistema de Delivery", font=('Helvetica', 13, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 15))
+
+        ttk.Label(frame, text="Usuario:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        self.entry_usuario = ttk.Entry(frame, width=22)
+        self.entry_usuario.grid(row=1, column=1, pady=5)
+
+        ttk.Label(frame, text="Contraseña:").grid(row=2, column=0, sticky='e', padx=5, pady=5)
+        self.entry_contrasena = ttk.Entry(frame, width=22, show="*")
+        self.entry_contrasena.grid(row=2, column=1, pady=5)
+        self.entry_contrasena.bind("<Return>", lambda e: self._intentar_login())
+
+        btn_login = ttk.Button(frame, text="Ingresar", command=self._intentar_login)
+        btn_login.grid(row=3, column=0, columnspan=2, pady=15)
+
+    def _intentar_login(self):
+        usuario = self.entry_usuario.get().strip()
+        contrasena = self.entry_contrasena.get().strip()
+
+        if not usuario or not contrasena:
+            messagebox.showwarning("Campos vacíos", "Por favor ingresa usuario y contraseña.", parent=self.ventana)
+            return
+
+        rol = self.gestor.validar_login(usuario, contrasena)
+
+        if rol:
+            self.ventana.destroy()
+            self.callback_exito(rol)
+        else:
+            messagebox.showerror("Acceso denegado", "Usuario o contraseña incorrectos.", parent=self.ventana)
+            self.entry_contrasena.delete(0, tk.END)
+
+
+# ==========================================
+# FUNCIONALIDADES 2 y 3: FORMULARIO CLIENTES Y REPARTIDORES
+# ==========================================
+class FormularioCliente:
+    def __init__(self, parent, callback_guardar):
+        self.callback_guardar = callback_guardar
+
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title("Registrar Nuevo Cliente")
+        self.ventana.geometry("360x280")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        frame = ttk.Frame(self.ventana, padding=25)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text="Registrar Cliente", font=('Helvetica', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
+
+        campos = [("Nombre:", 'entry_nombre'), ("Email:", 'entry_email'),
+                  ("Dirección:", 'entry_direccion'), ("Contraseña:", 'entry_contrasena')]
+
+        for i, (label, attr) in enumerate(campos, start=1):
+            ttk.Label(frame, text=label).grid(row=i, column=0, sticky='e', padx=5, pady=4)
+            entry = ttk.Entry(frame, width=24, show="*" if attr == 'entry_contrasena' else "")
+            entry.grid(row=i, column=1, pady=4)
+            setattr(self, attr, entry)
+
+        ttk.Button(frame, text="Guardar Cliente", command=self._guardar).grid(row=6, column=0, columnspan=2, pady=12)
+
+    def _guardar(self):
+        nombre = self.entry_nombre.get().strip()
+        email = self.entry_email.get().strip()
+        direccion = self.entry_direccion.get().strip()
+        contrasena = self.entry_contrasena.get().strip()
+
+        if not all([nombre, email, direccion, contrasena]):
+            messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios.", parent=self.ventana)
+            return
+
+        self.callback_guardar(nombre, email, direccion, contrasena)
+        self.ventana.destroy()
+
+
+class FormularioRepartidor:
+    def __init__(self, parent, callback_guardar):
+        self.callback_guardar = callback_guardar
+
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title("Registrar Nuevo Repartidor")
+        self.ventana.geometry("360x250")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        frame = ttk.Frame(self.ventana, padding=25)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text="Registrar Repartidor", font=('Helvetica', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
+
+        campos = [("Nombre:", 'entry_nombre'), ("Email:", 'entry_email'),
+                  ("Vehículo:", 'entry_vehiculo'), ("Contraseña:", 'entry_contrasena')]
+
+        for i, (label, attr) in enumerate(campos, start=1):
+            ttk.Label(frame, text=label).grid(row=i, column=0, sticky='e', padx=5, pady=4)
+            entry = ttk.Entry(frame, width=24, show="*" if attr == 'entry_contrasena' else "")
+            entry.grid(row=i, column=1, pady=4)
+            setattr(self, attr, entry)
+
+        ttk.Button(frame, text="Guardar Repartidor", command=self._guardar).grid(row=6, column=0, columnspan=2, pady=12)
+
+    def _guardar(self):
+        nombre = self.entry_nombre.get().strip()
+        email = self.entry_email.get().strip()
+        vehiculo = self.entry_vehiculo.get().strip()
+        contrasena = self.entry_contrasena.get().strip()
+
+        if not all([nombre, email, vehiculo, contrasena]):
+            messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios.", parent=self.ventana)
+            return
+
+        self.callback_guardar(nombre, email, vehiculo, contrasena)
+        self.ventana.destroy()
+
+
+# ==========================================
+# FUNCIONALIDADES 3 y 4: FORMULARIO RESTAURANTE + MENÚ
+# ==========================================
+class FormularioRestaurante:
+    def __init__(self, parent, callback_guardar):
+        self.callback_guardar = callback_guardar
+
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title("Registrar Nuevo Restaurante")
+        self.ventana.geometry("420x420")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        self.platos_temp = []
+
+        frame = ttk.Frame(self.ventana, padding=20)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text="Registrar Restaurante", font=('Helvetica', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 10))
+
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
+        self.entry_nombre = ttk.Entry(frame, width=24)
+        self.entry_nombre.grid(row=1, column=1, pady=4)
+
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
+        self.entry_email = ttk.Entry(frame, width=24)
+        self.entry_email.grid(row=2, column=1, pady=4)
+
+        # Sección para agregar platos al menú (Funcionalidad 4)
+        ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=2, sticky='ew', pady=8)
+        ttk.Label(frame, text="Agregar platos al menú:", font=('Helvetica', 10, 'bold')).grid(row=4, column=0, columnspan=2)
+
+        ttk.Label(frame, text="Plato:").grid(row=5, column=0, sticky='e', padx=5, pady=4)
+        self.entry_plato = ttk.Entry(frame, width=24)
+        self.entry_plato.grid(row=5, column=1, pady=4)
+
+        ttk.Label(frame, text="Precio ($):").grid(row=6, column=0, sticky='e', padx=5, pady=4)
+        self.entry_precio = ttk.Entry(frame, width=24)
+        self.entry_precio.grid(row=6, column=1, pady=4)
+
+        ttk.Button(frame, text="+ Añadir plato", command=self._agregar_plato).grid(row=7, column=0, columnspan=2, pady=4)
+
+        self.lista_platos = tk.Listbox(frame, height=5, width=38)
+        self.lista_platos.grid(row=8, column=0, columnspan=2, pady=4)
+
+        ttk.Button(frame, text="Guardar Restaurante", command=self._guardar).grid(row=9, column=0, columnspan=2, pady=10)
+
+    def _agregar_plato(self):
+        plato = self.entry_plato.get().strip()
+        precio_str = self.entry_precio.get().strip()
+
+        if not plato or not precio_str:
+            messagebox.showwarning("Campos vacíos", "Ingresa nombre y precio del plato.", parent=self.ventana)
+            return
+
+        # Validación: el precio debe ser un número
+        try:
+            precio = float(precio_str)
+            if precio < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Precio inválido", "El precio debe ser un número positivo.", parent=self.ventana)
+            return
+
+        self.platos_temp.append({'item': plato, 'precio': precio})
+        self.lista_platos.insert(tk.END, f"{plato} - ${precio:.2f}")
+        self.entry_plato.delete(0, tk.END)
+        self.entry_precio.delete(0, tk.END)
+
+    def _guardar(self):
+        nombre = self.entry_nombre.get().strip()
+        email = self.entry_email.get().strip()
+
+        if not nombre or not email:
+            messagebox.showwarning("Campos vacíos", "Nombre y email son obligatorios.", parent=self.ventana)
+            return
+        if not self.platos_temp:
+            messagebox.showwarning("Menú vacío", "Agrega al menos un plato al menú.", parent=self.ventana)
+            return
+
+        self.callback_guardar(nombre, email, self.platos_temp)
+        self.ventana.destroy()
+
+
 class ConsolaRedirector:
-    """Redirige el texto de backend a interfaz tkinter"""
     def __init__(self, text_widget):
         self.text_widget = text_widget
 
     def write(self, mensaje):
         self.text_widget.configure(state='normal')
         self.text_widget.insert(tk.END, mensaje)
-        self.text_widget.see(tk.END) # Auto-scroll
+        self.text_widget.see(tk.END)
         self.text_widget.configure(state='disabled')
 
     def flush(self):
         pass
+
 
 class DeliveryApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Sistema de Delivery - Panel de Control")
         self.root.geometry("850x650")
-        
-        # Estado de la aplicación (Simulando la base de datos)
+        self.root.withdraw()
+
         self.clientes = []
         self.restaurantes = []
         self.repartidores = []
         self.carrito = []
-        
-        # Instancia Singleton del Gestor
+        self._id_counter = 1  # Contador para IDs únicos
+
         self.gestor = GestorPedidos()
 
+        # Usuario de prueba para el login
+        usuario_prueba = UsuarioFactory.crear_usuario(
+            "Cliente", id=0, nombre="admin", email="admin@mail.com",
+            direccion="Admin", contraseña="1234"
+        )
+        self.gestor.registrar_usuario_sistema(usuario_prueba)
+
+        VentanaLogin(self.gestor, self._abrir_panel)
+
+    def _abrir_panel(self, rol: str):
+        self.root.deiconify()
         self._configurar_estilos()
         self._crear_interfaz()
-        
-        # Redirigir consola a la Pestaña 3
         sys.stdout = ConsolaRedirector(self.consola_text)
-        
-        print("--- SISTEMA DE DELIVERY INICIADO (GUI) ---")
+        print(f"--- SISTEMA DE DELIVERY INICIADO --- Bienvenido, rol: {rol}")
+
+    def _nuevo_id(self):
+        """Genera un ID único incremental para cada entidad creada."""
+        self._id_counter += 1
+        return self._id_counter
 
     def _configurar_estilos(self):
         style = ttk.Style()
@@ -55,65 +287,160 @@ class DeliveryApp:
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill='both', expand=True, padx=10, pady=10)
 
-        # Creación de Pestañas
         self.tab_gestion = ttk.Frame(notebook)
         self.tab_pedido = ttk.Frame(notebook)
+        self.tab_historial = ttk.Frame(notebook)
         self.tab_consola = ttk.Frame(notebook)
 
         notebook.add(self.tab_gestion, text=' 1. Gestión (CRUD)')
         notebook.add(self.tab_pedido, text=' 2. Nuevo Pedido')
-        notebook.add(self.tab_consola, text=' 3. Consola / Tracking')
+        notebook.add(self.tab_historial, text=' 3. Historial')
+        notebook.add(self.tab_consola, text=' 4. Consola / Tracking')
 
         self._construir_tab_gestion()
         self._construir_tab_pedido()
+        self._construir_tab_historial()
         self._construir_tab_consola()
 
     # ==========================================
-    # PESTAÑA 1: GESTIÓN (CRUD Simulado)
+    # PESTAÑA 1: GESTIÓN CON FORMULARIOS REALES
     # ==========================================
     def _construir_tab_gestion(self):
-        frame = ttk.LabelFrame(self.tab_gestion, text="Creación Rápida de Entidades", padding=20)
-        frame.pack(fill='x', padx=20, pady=20)
+        # Botones de registro
+        frame_botones = ttk.LabelFrame(self.tab_gestion, text="Registrar Nuevas Entidades", padding=15)
+        frame_botones.pack(fill='x', padx=20, pady=(15, 5))
 
-        btn_cliente = ttk.Button(frame, text="Crear Cliente (Antonia)", command=self._crear_cliente)
-        btn_cliente.pack(side='left', padx=10, expand=True)
+        ttk.Button(frame_botones, text="+ Registrar Cliente", command=self._abrir_form_cliente).pack(side='left', padx=10, expand=True)
+        ttk.Button(frame_botones, text="+ Registrar Restaurante", command=self._abrir_form_restaurante).pack(side='left', padx=10, expand=True)
+        ttk.Button(frame_botones, text="+ Registrar Repartidor", command=self._abrir_form_repartidor).pack(side='left', padx=10, expand=True)
 
-        btn_restaurante = ttk.Button(frame, text="Crear Restaurante (Papa Johns)", command=self._crear_restaurante)
-        btn_restaurante.pack(side='left', padx=10, expand=True)
+        # Treeview de usuarios registrados (Funcionalidad 7)
+        frame_tabla = ttk.LabelFrame(self.tab_gestion, text="Usuarios Registrados", padding=10)
+        frame_tabla.pack(fill='both', expand=True, padx=20, pady=(5, 15))
 
-        btn_repartidor = ttk.Button(frame, text="Crear Repartidor (Esteban)", command=self._crear_repartidor)
-        btn_repartidor.pack(side='left', padx=10, expand=True)
+        columnas = ('ID', 'Nombre', 'Rol', 'Email', 'Detalle')
+        self.tree_usuarios = ttk.Treeview(frame_tabla, columns=columnas, show='headings', height=10)
 
-    def _crear_cliente(self):
-        cliente = UsuarioFactory.crear_usuario("Cliente", id=1, nombre="Antonia", email="antonia@mail.com", direccion="Manuel Rodriguez 1874", contraseña="1234")
+        # Configurar columnas
+        self.tree_usuarios.heading('ID', text='ID')
+        self.tree_usuarios.heading('Nombre', text='Nombre')
+        self.tree_usuarios.heading('Rol', text='Rol')
+        self.tree_usuarios.heading('Email', text='Email')
+        self.tree_usuarios.heading('Detalle', text='Detalle')
+
+        self.tree_usuarios.column('ID', width=40, anchor='center')
+        self.tree_usuarios.column('Nombre', width=120)
+        self.tree_usuarios.column('Rol', width=100, anchor='center')
+        self.tree_usuarios.column('Email', width=180)
+        self.tree_usuarios.column('Detalle', width=220)
+
+        scrollbar = ttk.Scrollbar(frame_tabla, orient='vertical', command=self.tree_usuarios.yview)
+        self.tree_usuarios.configure(yscrollcommand=scrollbar.set)
+        self.tree_usuarios.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+
+        # Botón editar y doble click para editar
+        ttk.Button(frame_tabla, text="✏ Editar seleccionado", command=self._abrir_form_edicion).pack(pady=(8, 0))
+        self.tree_usuarios.bind("<Double-1>", lambda e: self._abrir_form_edicion())
+
+    def _actualizar_treeview(self):
+        """Refresca la tabla con todos los usuarios registrados en tiempo real."""
+        self.tree_usuarios.delete(*self.tree_usuarios.get_children())
+
+        for c in self.clientes:
+            self.tree_usuarios.insert('', tk.END, values=(
+                c.id, c.nombre, 'Cliente', c.email, f"Dir: {c.direccionEntrega}"
+            ))
+        for r in self.restaurantes:
+            self.tree_usuarios.insert('', tk.END, values=(
+                r.id, r.nombre, 'Restaurante', r.email, f"{len(r.menu)} platos en menú"
+            ))
+        for rep in self.repartidores:
+            estado = "Disponible" if rep.disponible else "Ocupado"
+            self.tree_usuarios.insert('', tk.END, values=(
+                rep.id, rep.nombre, 'Repartidor', rep.email, f"{rep.vehiculo} | {estado}"
+            ))
+
+    def _abrir_form_cliente(self):
+        FormularioCliente(self.root, self._guardar_cliente)
+    
+    def _abrir_form_edicion(self):
+        """Detecta qué tipo de usuario está seleccionado y abre el formulario correspondiente."""
+        seleccion = self.tree_usuarios.selection()
+        if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona un usuario de la tabla para editar.")
+            return
+
+        valores = self.tree_usuarios.item(seleccion[0], 'values')
+        id_usuario = int(valores[0])
+        rol = valores[2]
+
+        if rol == 'Cliente':
+            usuario = next((c for c in self.clientes if c.id == id_usuario), None)
+            if usuario:
+                FormularioEditarCliente(self.root, usuario, self._post_edicion)
+
+        elif rol == 'Repartidor':
+            usuario = next((r for r in self.repartidores if r.id == id_usuario), None)
+            if usuario:
+                FormularioEditarRepartidor(self.root, usuario, self._post_edicion)
+
+        elif rol == 'Restaurante':
+            usuario = next((r for r in self.restaurantes if r.id == id_usuario), None)
+            if usuario:
+                FormularioEditarMenu(self.root, usuario, self._post_edicion)
+
+    def _post_edicion(self):
+        """Se llama después de cualquier edición para refrescar el Treeview."""
+        self._actualizar_treeview()
+        print("[*] Datos actualizados correctamente.")
+
+    def _guardar_cliente(self, nombre, email, direccion, contrasena):
+        cliente = UsuarioFactory.crear_usuario(
+            "Cliente", id=self._nuevo_id(), nombre=nombre,
+            email=email, direccion=direccion, contraseña=contrasena
+        )
         self.clientes.append(cliente)
+        self.gestor.registrar_usuario_sistema(cliente)
+        self._actualizar_treeview()  # Refresca la tabla automáticamente
         print(f"[*] Creado: {cliente.obtenerDatos()}")
 
-    def _crear_restaurante(self):
-        menu_italiano = [{'item': 'Pizza Margarita', 'precio': 12.5}, {'item': 'Palitos de ajo', 'precio': 5.0}]
-        restaurante = UsuarioFactory.crear_usuario("Restaurante", id=101, nombre="Papa Johns", email="contacto@papajohns.com", menu=menu_italiano)
+    def _abrir_form_restaurante(self):
+        FormularioRestaurante(self.root, self._guardar_restaurante)
+
+    def _guardar_restaurante(self, nombre, email, menu):
+        restaurante = UsuarioFactory.crear_usuario(
+            "Restaurante", id=self._nuevo_id(), nombre=nombre,
+            email=email, menu=menu
+        )
         self.restaurantes.append(restaurante)
-        self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes] # Actualizar UI de pedidos
+        self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes]
+        self._actualizar_treeview()  # Refresca la tabla automáticamente
         print(f"[*] Creado: {restaurante.obtenerDatos()}")
 
-    def _crear_repartidor(self):
-        repartidor = UsuarioFactory.crear_usuario("Repartidor", id=201, nombre="Esteban", email="esteban@delivery.com", vehiculo="Moto Suzuki", contraseña="1234")
+    def _abrir_form_repartidor(self):
+        FormularioRepartidor(self.root, self._guardar_repartidor)
+
+    def _guardar_repartidor(self, nombre, email, vehiculo, contrasena):
+        repartidor = UsuarioFactory.crear_usuario(
+            "Repartidor", id=self._nuevo_id(), nombre=nombre,
+            email=email, vehiculo=vehiculo, contraseña=contrasena
+        )
         self.repartidores.append(repartidor)
+        self._actualizar_treeview()  # Refresca la tabla automáticamente
         print(f"[*] Creado: {repartidor.obtenerDatos()}")
 
     # ==========================================
     # PESTAÑA 2: NUEVO PEDIDO
     # ==========================================
     def _construir_tab_pedido(self):
-        # Selección de Restaurante
         frame_rest = ttk.LabelFrame(self.tab_pedido, text="Selección de Restaurante", padding=10)
         frame_rest.pack(fill='x', padx=20, pady=10)
-        
+
         self.combo_restaurantes = ttk.Combobox(frame_rest, state="readonly")
         self.combo_restaurantes.pack(side='left', padx=10)
         self.combo_restaurantes.bind("<<ComboboxSelected>>", self._cargar_menu)
 
-        # Menú y Carrito
         frame_menu = ttk.Frame(self.tab_pedido)
         frame_menu.pack(fill='both', expand=True, padx=20, pady=5)
 
@@ -122,16 +449,19 @@ class DeliveryApp:
         lbl_menu.pack(side='left', fill='both', expand=True, padx=5)
         self.lista_menu = tk.Listbox(lbl_menu, height=8)
         self.lista_menu.pack(fill='both', expand=True)
-        btn_agregar = ttk.Button(lbl_menu, text="Añadir al Carrito ->", command=self._agregar_al_carrito)
-        btn_agregar.pack(pady=5)
+        ttk.Button(lbl_menu, text="Añadir al Carrito ->", command=self._agregar_al_carrito).pack(pady=5)
 
-        # Lista de Carrito
+        # Lista de Carrito con botones de eliminación (Funcionalidades 5 y 18)
         lbl_carrito = ttk.LabelFrame(frame_menu, text="Tu Carrito", padding=10)
         lbl_carrito.pack(side='right', fill='both', expand=True, padx=5)
         self.lista_carrito = tk.Listbox(lbl_carrito, height=8)
         self.lista_carrito.pack(fill='both', expand=True)
 
-        # Pago y Confirmación
+        frame_botones_carrito = ttk.Frame(lbl_carrito)
+        frame_botones_carrito.pack(fill='x', pady=5)
+        ttk.Button(frame_botones_carrito, text="Eliminar ítem", command=self._eliminar_del_carrito).pack(side='left', expand=True, padx=2)
+        ttk.Button(frame_botones_carrito, text="Vaciar carrito", command=self._vaciar_carrito).pack(side='right', expand=True, padx=2)
+
         frame_pago = ttk.LabelFrame(self.tab_pedido, text="Pago y Confirmación", padding=10)
         frame_pago.pack(fill='x', padx=20, pady=10)
 
@@ -140,14 +470,12 @@ class DeliveryApp:
         self.combo_pago.pack(side='left', padx=5)
         self.combo_pago.current(0)
 
-        btn_confirmar = ttk.Button(frame_pago, text="Pagar y Confirmar Pedido", command=self._procesar_pedido)
-        btn_confirmar.pack(side='right', padx=10)
+        ttk.Button(frame_pago, text="Pagar y Confirmar Pedido", command=self._procesar_pedido).pack(side='right', padx=10)
 
     def _cargar_menu(self, event):
         self.lista_menu.delete(0, tk.END)
         nombre_rest = self.combo_restaurantes.get()
         restaurante = next((r for r in self.restaurantes if r.nombre == nombre_rest), None)
-        
         if restaurante:
             for item in restaurante.menu:
                 self.lista_menu.insert(tk.END, f"{item['item']} - ${item['precio']}")
@@ -155,62 +483,119 @@ class DeliveryApp:
     def _agregar_al_carrito(self):
         seleccion = self.lista_menu.curselection()
         if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona un plato del menú primero.")
             return
-        
         index = seleccion[0]
         nombre_rest = self.combo_restaurantes.get()
         restaurante = next((r for r in self.restaurantes if r.nombre == nombre_rest), None)
-        
         if restaurante:
             item = restaurante.menu[index]
             self.carrito.append(item)
             self.lista_carrito.insert(tk.END, f"{item['item']} - ${item['precio']}")
+            print(f"[+] Añadido al carrito: {item['item']} (${item['precio']})")
+
+    def _eliminar_del_carrito(self):
+        """[Funcionalidad 18] Elimina el ítem seleccionado del carrito."""
+        seleccion = self.lista_carrito.curselection()
+        if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona un ítem del carrito para eliminarlo.")
+            return
+        index = seleccion[0]
+        nombre_item = self.carrito[index]['item']
+        self.carrito.pop(index)
+        self.lista_carrito.delete(index)
+        print(f"[-] Eliminado del carrito: {nombre_item}")
+
+    def _vaciar_carrito(self):
+        """Limpia todos los ítems del carrito de una vez."""
+        if not self.carrito:
+            messagebox.showinfo("Carrito vacío", "El carrito ya está vacío.")
+            return
+        self.carrito.clear()
+        self.lista_carrito.delete(0, tk.END)
+        print("[-] Carrito vaciado completamente.")
 
     def _procesar_pedido(self):
         if not self.clientes or not self.repartidores:
-            messagebox.showwarning("Atención", "Debes crear al menos un Cliente y un Repartidor en la Pestaña 1.")
+            messagebox.showwarning("Atención", "Debes registrar al menos un Cliente y un Repartidor.")
             return
         if not self.carrito:
             messagebox.showwarning("Atención", "El carrito está vacío.")
             return
 
-        cliente = self.clientes[0] # Tomamos el primer cliente creado
+        cliente = self.clientes[0]
         nombre_rest = self.combo_restaurantes.get()
         restaurante = next((r for r in self.restaurantes if r.nombre == nombre_rest), None)
 
         print("\n--- INICIANDO PROCESO DE COMPRA ---")
         cliente.realizarPedido()
-        
-        # 1. Crear Pedido
-        pedido = Pedido(id_pedido=1001, cliente=cliente, restaurante=restaurante, items_comprados=list(self.carrito))
+
+        pedido = Pedido(id_pedido=self._nuevo_id(), cliente=cliente, restaurante=restaurante, items_comprados=list(self.carrito))
         total = pedido.calcularTotal()
         print(f"Total a pagar: ${total:.2f}")
 
-        # 2. Asignar Repartidor
         repartidor = next((r for r in self.repartidores if r.disponible), None)
         if repartidor:
             pedido.repartidor = repartidor
             repartidor.disponible = False
             print(f"Asignación Automática: Repartidor {repartidor.nombre} asignado.")
         else:
-            print(" No hay repartidores disponibles.")
+            print("No hay repartidores disponibles.")
             return
 
-        # 3. Inyección de Dependencias (Estrategia de Pago)
         metodo = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
         self.gestor.configurar_metodo_pago(metodo)
-
-        # 4. Confirmar y simular flujo
         self.gestor.confirmarPedido(pedido, cliente)
         restaurante.prepararPedido(pedido)
         pedido.actualizarEstado("En Camino")
         repartidor.actualizarUbicacion()
         repartidor.completarEntrega(pedido)
 
-        # Limpiar carrito
         self.carrito.clear()
         self.lista_carrito.delete(0, tk.END)
+        self._actualizar_historial(pedido)  # Registra en el historial
         messagebox.showinfo("Éxito", "¡Pedido procesado con éxito! Revisa la consola.")
+
+    # ==========================================
+    # PESTAÑA 3: HISTORIAL DE TRANSACCIONES
+    # ==========================================
+    def _construir_tab_historial(self):
+        frame_tabla = ttk.LabelFrame(self.tab_historial, text="Pedidos Completados", padding=10)
+        frame_tabla.pack(fill='both', expand=True, padx=20, pady=15)
+
+        columnas = ('ID', 'Cliente', 'Restaurante', 'Repartidor', 'Total', 'Estado')
+        self.tree_historial = ttk.Treeview(frame_tabla, columns=columnas, show='headings', height=14)
+
+        self.tree_historial.heading('ID', text='ID Pedido')
+        self.tree_historial.heading('Cliente', text='Cliente')
+        self.tree_historial.heading('Restaurante', text='Restaurante')
+        self.tree_historial.heading('Repartidor', text='Repartidor')
+        self.tree_historial.heading('Total', text='Total')
+        self.tree_historial.heading('Estado', text='Estado')
+
+        self.tree_historial.column('ID', width=70, anchor='center')
+        self.tree_historial.column('Cliente', width=130)
+        self.tree_historial.column('Restaurante', width=130)
+        self.tree_historial.column('Repartidor', width=120)
+        self.tree_historial.column('Total', width=80, anchor='center')
+        self.tree_historial.column('Estado', width=110, anchor='center')
+
+        scrollbar = ttk.Scrollbar(frame_tabla, orient='vertical', command=self.tree_historial.yview)
+        self.tree_historial.configure(yscrollcommand=scrollbar.set)
+        self.tree_historial.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+
+    def _actualizar_historial(self, pedido):
+        """Agrega un pedido completado al Treeview de historial."""
+        repartidor_nombre = pedido.repartidor.nombre if pedido.repartidor else "N/A"
+        self.tree_historial.insert('', tk.END, values=(
+            f"#{pedido.id}",
+            pedido.cliente.nombre,
+            pedido.restaurante.nombre,
+            repartidor_nombre,
+            f"${pedido.total:.2f}",
+            pedido.estado
+        ))
 
     # ==========================================
     # PESTAÑA 3: CONSOLA DE EVENTOS
@@ -218,10 +603,146 @@ class DeliveryApp:
     def _construir_tab_consola(self):
         self.consola_text = tk.Text(self.tab_consola, bg="black", fg="#00FF00", font=('Courier', 10), state='disabled', wrap='word')
         scrollbar = ttk.Scrollbar(self.tab_consola, orient='vertical', command=self.consola_text.yview)
-        
         self.consola_text.configure(yscrollcommand=scrollbar.set)
         self.consola_text.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=10)
         scrollbar.pack(side='right', fill='y', padx=(0, 10), pady=10)
+
+    # ==========================================
+    # FUNCIONALIDADES 11 Y 12: FORMULARIOS DE EDICIÓN
+    # ==========================================
+class FormularioEditarCliente:
+    """[Funcionalidad 11] Edita la dirección de entrega de un cliente."""
+    def __init__(self, parent, cliente, callback):
+        self.cliente = cliente
+        self.callback = callback
+
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title(f"Editar Cliente: {cliente.nombre}")
+        self.ventana.geometry("350x180")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        frame = ttk.Frame(self.ventana, padding=25)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text=f"Editando: {cliente.nombre}", font=('Helvetica', 11, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
+
+        ttk.Label(frame, text="Nueva dirección:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        self.entry_direccion = ttk.Entry(frame, width=24)
+        self.entry_direccion.insert(0, cliente.direccionEntrega)  # Muestra valor actual
+        self.entry_direccion.grid(row=1, column=1, pady=5)
+
+        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=2, column=0, columnspan=2, pady=12)
+
+    def _guardar(self):
+        nueva_direccion = self.entry_direccion.get().strip()
+        if not nueva_direccion:
+            messagebox.showwarning("Campo vacío", "La dirección no puede estar vacía.", parent=self.ventana)
+            return
+        self.cliente.actualizar_direccion(nueva_direccion)
+        self.callback()
+        self.ventana.destroy()
+
+
+class FormularioEditarRepartidor:
+    """[Funcionalidad 11] Edita el vehículo de un repartidor."""
+    def __init__(self, parent, repartidor, callback):
+        self.repartidor = repartidor
+        self.callback = callback
+
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title(f"Editar Repartidor: {repartidor.nombre}")
+        self.ventana.geometry("350x180")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        frame = ttk.Frame(self.ventana, padding=25)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text=f"Editando: {repartidor.nombre}", font=('Helvetica', 11, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
+
+        ttk.Label(frame, text="Nuevo vehículo:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
+        self.entry_vehiculo = ttk.Entry(frame, width=24)
+        self.entry_vehiculo.insert(0, repartidor.vehiculo)  # Muestra valor actual
+        self.entry_vehiculo.grid(row=1, column=1, pady=5)
+
+        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=2, column=0, columnspan=2, pady=12)
+
+    def _guardar(self):
+        nuevo_vehiculo = self.entry_vehiculo.get().strip()
+        if not nuevo_vehiculo:
+            messagebox.showwarning("Campo vacío", "El vehículo no puede estar vacío.", parent=self.ventana)
+            return
+        self.repartidor.vehiculo = nuevo_vehiculo
+        print(f"[*] Perfil Actualizado: Repartidor {self.repartidor.nombre} cambió su vehículo a '{nuevo_vehiculo}'.")
+        self.callback()
+        self.ventana.destroy()
+
+
+class FormularioEditarMenu:
+    """[Funcionalidad 12] Edita los precios de los platos del menú de un restaurante."""
+    def __init__(self, parent, restaurante, callback):
+        self.restaurante = restaurante
+        self.callback = callback
+
+        self.ventana = tk.Toplevel(parent)
+        self.ventana.title(f"Editar Menú: {restaurante.nombre}")
+        self.ventana.geometry("400x350")
+        self.ventana.resizable(False, False)
+        self.ventana.grab_set()
+
+        frame = ttk.Frame(self.ventana, padding=20)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text=f"Menú de {restaurante.nombre}", font=('Helvetica', 11, 'bold')).pack(pady=(0, 10))
+
+        # Treeview del menú editable
+        columnas = ('Plato', 'Precio Actual')
+        self.tree_menu = ttk.Treeview(frame, columns=columnas, show='headings', height=6)
+        self.tree_menu.heading('Plato', text='Plato')
+        self.tree_menu.heading('Precio Actual', text='Precio Actual')
+        self.tree_menu.column('Plato', width=200)
+        self.tree_menu.column('Precio Actual', width=110, anchor='center')
+        self.tree_menu.pack(fill='x')
+
+        for item in restaurante.menu:
+            self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']:.2f}"))
+
+        # Campos para editar precio
+        frame_editar = ttk.Frame(frame)
+        frame_editar.pack(fill='x', pady=10)
+
+        ttk.Label(frame_editar, text="Nuevo precio ($):").pack(side='left', padx=5)
+        self.entry_precio = ttk.Entry(frame_editar, width=12)
+        self.entry_precio.pack(side='left', padx=5)
+
+        ttk.Button(frame_editar, text="Actualizar precio", command=self._actualizar_precio).pack(side='left', padx=5)
+
+    def _actualizar_precio(self):
+        seleccion = self.tree_menu.selection()
+        if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona un plato de la lista.", parent=self.ventana)
+            return
+
+        precio_str = self.entry_precio.get().strip()
+        try:
+            nuevo_precio = float(precio_str)
+            if nuevo_precio < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Precio inválido", "Ingresa un número positivo.", parent=self.ventana)
+            return
+
+        nombre_plato = self.tree_menu.item(seleccion[0], 'values')[0]
+        self.restaurante.modificar_item(nombre_plato, nuevo_precio)
+
+        # Refrescar el treeview del menú
+        self.tree_menu.delete(*self.tree_menu.get_children())
+        for item in self.restaurante.menu:
+            self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']:.2f}"))
+
+        self.entry_precio.delete(0, tk.END)
+        self.callback()    
 
 
 if __name__ == "__main__":
