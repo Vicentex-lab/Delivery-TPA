@@ -277,6 +277,11 @@ class DeliveryApp:
         self.root.deiconify()
         self._configurar_estilos()
         self._crear_interfaz()
+        
+        #  Cargar visualmente el Mock Data al iniciar el panel
+        self._actualizar_treeview()  # Llena la tabla de la pestaña "Gestión"
+        self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes]  # Llena el combobox de "Nuevo Pedido"
+
         sys.stdout = ConsolaRedirector(self.consola_text)
         print(f"--- SISTEMA DE DELIVERY INICIADO --- Bienvenido, rol: {rol}")
 
