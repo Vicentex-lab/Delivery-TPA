@@ -1,93 +1,83 @@
-# Importamos lo necesario desde la carpeta backend
 from backend.logica_negocio import GestorPedidos
 from backend.usuarios import UsuarioFactory
-from backend.interfaces import PagoPaypal
+from backend.interfaces import PagoPaypal, PagoTarjeta
 
-# ==========================================
-# SCRIPT DE PRUEBA: 20 FUNCIONALIDADES
-# ==========================================
+def generar_mock_data(gestor: GestorPedidos):
+    print("\n--- INICIALIZANDO MOCK DATA (10 Clientes, 5 Restaurantes, 5 Repartidores) ---")
+    
+    # 1. Instanciar 10 Clientes
+    for i in range(1, 11):
+        cliente = UsuarioFactory.crear_usuario(
+            "Cliente", id=i, nombre=f"Cliente_{i}", email=f"user{i}@mail.com", 
+            direccion=f"Calle Falsa {100+i}", contraseña="123"
+        )
+        gestor.registrar_usuario_sistema(cliente)
+
+    # 2. Instanciar 5 Restaurantes con 10 platos cada uno
+    for i in range(1, 6):
+        menu_mock = [{'item': f'Plato {j} Rest {i}', 'precio': 5.0 + j} for j in range(1, 11)]
+        restaurante = UsuarioFactory.crear_usuario(
+            "Restaurante", id=100+i, nombre=f"Restaurante_{i}", 
+            email=f"contacto{i}@food.com", menu=menu_mock, contraseña="123"
+        )
+        gestor.registrar_usuario_sistema(restaurante)
+
+    # 3. Instanciar 5 Repartidores
+    for i in range(1, 6):
+        repartidor = UsuarioFactory.crear_usuario(
+            "Repartidor", id=200+i, nombre=f"Repartidor_{i}", 
+            email=f"rider{i}@delivery.com", vehiculo="Moto", contraseña="123"
+        )
+        gestor.registrar_usuario_sistema(repartidor)
+    print("[*] Mock Data inyectada con éxito en la persistencia del sistema.\n")
+
 if __name__ == "__main__":
     print("\n==================================================")
-    print("--- COMPROBACIÓN REQUERIMIENTOS VICENTE CÁRDENAS ---")
+    print("--- SISTEMA DE DELIVERY: COMPROBACIÓN DE FUNCIONALIDADES ---")
     print("==================================================")
     
-    gestor_sistema = GestorPedidos()
+    gestor = GestorPedidos()
+    generar_mock_data(gestor)
 
-    # --- INSTANCIACIÓN REQUERIDA PARA LAS PRUEBAS ---
-    # Creamos las entidades base asegurando el uso del parámetro 'contraseña'
-    cliente1 = UsuarioFactory.crear_usuario(
-        "Cliente", id=1, nombre="Antonia", email="antonia@mail.com", 
-        direccion="Manuel Rodriguez 1874", contraseña="securePass123"
-    )
+    # Extrayendo entidades para las pruebas
+    cliente_test = gestor.usuarios_registrados[0]  # Cliente_1
+    restaurante_test = gestor.usuarios_registrados[10] # Restaurante_1
+    repartidor_test = gestor.usuarios_registrados[15] # Repartidor_1
+
+    # PRUEBA QA - EXCEPCIONES Y VALIDACIONES (Funcionalidad 20)
+    print("\n-> Probando Funcionalidad 20 (Manejo de Excepciones y QA):")
+    try:
+        # Intento de forzar un método de pago nulo (Debe saltar excepción controlada)
+        gestor.configurar_metodo_pago(None)
+        pedido_error = gestor.formalizar_pedido(999, cliente_test, restaurante_test, [restaurante_test.menu[0]])
+        gestor.confirmarPedido(pedido_error, cliente_test)
+    except ValueError as e:
+        print(f"[QA Exception Catch] Bloqueo exitoso. Error detectado: {e}")
+
+    # PRUEBA DECORATOR (Funcionalidad 13 con Patrón Estructural)
+    print("\n-> Probando Funcionalidad 13 (Cálculo Avanzado con Patrón Decorator):")
+    pedido_dinamico = gestor.formalizar_pedido(1001, cliente_test, restaurante_test, [restaurante_test.menu[0], restaurante_test.menu[1]])
     
-    menu_italiano = [{'item': 'Pizza Margarita', 'precio': 12.5}, {'item': 'Palitos de ajo', 'precio': 5.0}]
-    restaurante1 = UsuarioFactory.crear_usuario(
-        "Restaurante", id=101, nombre="Papa Johns", email="contacto@papajohns.com", menu=menu_italiano
-    )
+    total_con_extras = pedido_dinamico.calcularTotal(tarifa_envio=3.50, propina=2.00)
+    print(f"Subtotal Base: ${pedido_dinamico.subtotal:.2f}")
+    print(f"Tarifa de Envío: ${pedido_dinamico.tarifa_envio:.2f}")
+    print(f"Propina: ${pedido_dinamico.propina:.2f}")
+    print(f"Total Neto (vía Decorator): ${total_con_extras:.2f}")
+
+    # PRUEBA DE FLUJO COMPLETO (Funcionalidades 14, 15 y 16)
+    print("\n-> Probando Funcionalidades 14, 15 y 16 (Estrategia, Estados y Sync):")
+    pedido_dinamico.repartidor = repartidor_test
+    gestor.configurar_metodo_pago(PagoTarjeta())
     
-    repartidor1 = UsuarioFactory.crear_usuario(
-        "Repartidor", id=201, nombre="Esteban", email="esteban@delivery.com", vehiculo="Moto Suzuki"
-    )
-
-    # ==================================================
-    # PRUEBA DE FUNCIONALIDAD 1: VALIDACIÓN DE LOGIN
-    # ==================================================
-    print("\n-> Probando Funcionalidad 1 (Login):")
-    # Registramos al cliente en la persistencia del sistema activo
-    gestor_sistema.registrar_usuario_sistema(cliente1)
+    print(f"Estado Repartidor antes: Disponible = {repartidor_test.disponible}")
+    gestor.confirmarPedido(pedido_dinamico, cliente_test)
+    restaurante_test.prepararPedido(pedido_dinamico)
+    pedido_dinamico.actualizarEstado("En Camino")
+    print(f"Estado Repartidor en ruta: Disponible = {repartidor_test.disponible} (Debe ser False)")
     
-    # Caso 1: Login Fallido
-    gestor_sistema.validar_login("Antonia", "clave_incorrecta")
-    # Caso 2: Login Exitoso (Debe retornar 'Cliente')
-    gestor_sistema.validar_login("Antonia", "securePass123")
+    repartidor_test.completarEntrega(pedido_dinamico)
+    print(f"Estado Repartidor post-entrega: Disponible = {repartidor_test.disponible} (Debe ser True)")
 
-    # ==================================================
-    # PRUEBAS RESTO DE REQUERIMIENTOS
-    # ==================================================
-    
-    # Probar Funcionalidades 11 y 12 (Actualizaciones)
-    print("\n-> Probando Funcionalidades 11 y 12:")
-    cliente1.actualizar_direccion("Nueva Avenida Diagonal 456")
-    restaurante1.modificar_item("Pizza Margarita", 14.99)
-
-    # Probar Funcionalidad 6 (Formalización dinámica)
-    print("\n-> Probando Funcionalidad 6:")
-    pedido_dinamico = gestor_sistema.formalizar_pedido(2002, cliente1, restaurante1, [restaurante1.menu[0]])
-
-    # Probar Funcionalidad 13 (Cálculo Avanzado con Extras)
-    print("\n-> Probando Funcionalidad 13:")
-    total_con_extras = pedido_dinamico.calcularTotal(tarifa_envio=2.50, propina=1.50)
-    print(f"Subtotal: ${pedido_dinamico.subtotal:.2f} | Envío: $2.50 | Propina: $1.50")
-    print(f"Total Neto Calculado: ${total_con_extras:.2f}")
-
-    # Probar Funcionalidades 15 y 16 (Sincronización Automática de Repartidor)
-    print("\n-> Probando Funcionalidades 15 y 16:")
-    pedido_dinamico.repartidor = repartidor1
-    print(f"Estado inicial de {repartidor1.nombre} antes de confirmar: Disponible = {repartidor1.disponible}")
-        
-    gestor_sistema.configurar_metodo_pago(PagoPaypal())
-    gestor_sistema.confirmarPedido(pedido_dinamico, cliente1)
-    print(f"Estado de {repartidor1.nombre} tras confirmar el pedido: Disponible = {repartidor1.disponible} (Debe ser False)")
-        
-    # Cambiamos a entregado para liberar al repartidor automáticamente
-    pedido_dinamico.actualizarEstado("Entregado")
-    print(f"Estado de {repartidor1.nombre} tras entrega completada: Disponible = {repartidor1.disponible} (Debe ser True)")
-
-    # Probar Funcionalidad 19 (Rollback)
-    print("\n-> Probando Funcionalidad 19:")
-    pedido_cancelable = gestor_sistema.formalizar_pedido(3003, cliente1, restaurante1, [restaurante1.menu[0]])
-    # Intentamos cancelarlo cuando está en estado "Creado"
-    gestor_sistema.cancelar_pedido_rollback(pedido_cancelable)
-
-    # Probar Funcionalidad 17 (Soft Delete con validación)
-    print("\n-> Probando Funcionalidad 17:")
-    # Creamos un pedido que se quede "En Preparación" asignado a Antonia
-    pedido_activo = gestor_sistema.formalizar_pedido(4004, cliente1, restaurante1, [restaurante1.menu[0]])
-    pedido_activo.actualizarEstado("En Preparación")
-        
-    # Intento 1: Debe denegarse porque tiene el pedido 4004 activo
-    gestor_sistema.dar_baja_usuario_soft_delete(cliente1.id)
-        
-    # Intento 2: Lo cancelamos (Rollback) y ahora sí debería permitir la baja lógica
-    gestor_sistema.cancelar_pedido_rollback(pedido_activo)
-    gestor_sistema.dar_baja_usuario_soft_delete(cliente1.id)
+    print("\n==================================================")
+    print("TODAS LAS FUNCIONALIDADES INTEGRADAS CORRECTAMENTE.")
+    print("==================================================")

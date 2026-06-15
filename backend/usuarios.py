@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
+from .patrones_esctructuralesatrones_estructurales import CostoBasePedido, EnvioDecorator, PropinaDecorator
 
 # ==========================================
 # JERARQUÍA DE USUARIOS (Herencia y Factory)
@@ -59,13 +60,21 @@ class Pedido:
     def calcularTotal(self, tarifa_envio: float = 0.0, propina: float = 0.0) -> float:
         """
         [Funcionalidad 13 - Cálculo Avanzado] 
-        Aplica el Principio SRP calculando el subtotal base de los platos 
-        e inyectando costos extras como el envío y la propina voluntaria.
+        Utiliza el Patrón Estructural Decorator para inyectar costos dinámicos.
         """
-        self.subtotal = sum(item['precio'] for item in self.items_comprados)
+        # 1. Objeto base (Subtotal)
+        costo_base = CostoBasePedido(self.items_comprados)
+        self.subtotal = costo_base.obtener_costo()
+        
+        # 2. Decoramos con el envío
         self.tarifa_envio = tarifa_envio
+        pedido_con_envio = EnvioDecorator(costo_base, self.tarifa_envio)
+        
+        # 3. Decoramos con la propina
         self.propina = propina
-        self.total = self.subtotal + self.tarifa_envio + self.propina
+        pedido_final = PropinaDecorator(pedido_con_envio, self.propina)
+        
+        self.total = pedido_final.obtener_costo()
         return self.total
 
     def actualizarEstado(self, nuevo_estado: str):
