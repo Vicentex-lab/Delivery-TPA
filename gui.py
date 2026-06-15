@@ -5,6 +5,7 @@ import sys
 from backend.logica_negocio import GestorPedidos
 from backend.usuarios import UsuarioFactory, Pedido
 from backend.interfaces import PagoTarjeta, PagoPaypal
+from main import generar_mock_data
 
 
 # ==========================================
@@ -254,6 +255,14 @@ class DeliveryApp:
         self._id_counter = 1  # Contador para IDs únicos
 
         self.gestor = GestorPedidos()
+        # INYECTAR MOCK DATA AQUÍ
+        generar_mock_data(self.gestor)
+
+        # Sincronizar las listas de la GUI con las del backend
+        for u in self.gestor.usuarios_registrados:
+            if u.rol == "Cliente": self.clientes.append(u)
+            elif u.rol == "Restaurante": self.restaurantes.append(u)
+            elif u.rol == "Repartidor": self.repartidores.append(u)
 
         # Usuario de prueba para el login
         usuario_prueba = UsuarioFactory.crear_usuario(
