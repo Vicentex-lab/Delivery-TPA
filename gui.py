@@ -4,7 +4,7 @@ import sys
 
 from backend.logica_negocio import GestorPedidos
 from backend.usuarios import UsuarioFactory, Pedido
-from backend.interfaces import PagoTarjeta, PagoPaypal
+from backend.interfaces import PagoTarjeta, PagoPaypal, CargoServicioDecorator
 
 
 # ==========================================
@@ -669,10 +669,18 @@ class DeliveryApp:
             print("No hay repartidores disponibles.")
             return
 
-        metodo = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
-        metodo_con_cargo = CargoServicioDecorator(metodo)
-        self.gestor.configurar_metodo_pago(metodo_con_cargo)
-        self.gestor.configurar_metodo_pago(metodo)
+        #metodo = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
+        #self.gestor.configurar_metodo_pago(metodo)
+        
+        
+        # Instanciamos el método base seleccionado
+        metodo_base = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
+        
+        # 2. Aplicamos el Decorator para agregar la funcionalidad extra en tiempo de ejecución
+        metodo_decorado = CargoServicioDecorator(metodo_base)
+        
+        # 3. Inyectamos el método ya decorado al gestor
+        self.gestor.configurar_metodo_pago(metodo_decorado)
         self.gestor.confirmarPedido(pedido, cliente)
         restaurante.prepararPedido(pedido)
         pedido.actualizarEstado("En Camino")

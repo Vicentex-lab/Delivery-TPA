@@ -25,8 +25,15 @@ class PagoPaypal(MetodoPago):
         print(f"Procesando pago de ${monto:.2f} mediante PayPal...")
         return True 
     
+class SistemaNotificacion:
+    def enviarMensaje(self, email: str, msj: str):
+        print(f"[Notificación a {email}]: {msj}")
+
 class MetodoPagoDecorator(MetodoPago):
-    """Clase base para los decoradores de pago."""
+    """
+    [Patrón Estructural: Decorator] 
+    Clase base que envuelve a un MetodoPago utilizando composición.
+    """
     def __init__(self, metodo_base: MetodoPago):
         self._metodo_base = metodo_base
 
@@ -34,12 +41,11 @@ class MetodoPagoDecorator(MetodoPago):
         return self._metodo_base.procesarPago(monto)
 
 class CargoServicioDecorator(MetodoPagoDecorator):
-    """Decorador concreto que añade un 5% de cargo por uso de la app."""
+    """
+    [Patrón Estructural: Decorator] 
+    Decorador concreto que añade dinámicamente un cargo por servicio del 5%.
+    """
     def procesarPago(self, monto: float) -> bool:
         monto_con_cargo = monto * 1.05
-        print(f"Aplicando 5% de cargo por servicio. Nuevo monto a procesar: ${monto_con_cargo:.2f}")
+        print(f"[*] Patrón Decorator: Aplicando 5% de cargo por servicio app. Monto final: ${monto_con_cargo:.2f}")
         return super().procesarPago(monto_con_cargo)
-    
-class SistemaNotificacion:
-    def enviarMensaje(self, email: str, msj: str):
-        print(f"[Notificación a {email}]: {msj}")
