@@ -8,6 +8,68 @@ from backend.interfaces import PagoTarjeta, PagoPaypal
 
 
 # ==========================================
+# UTILIDADES DE VALIDACIÓN (Funcionalidad 20)
+# ==========================================
+import re
+
+def validar_email(email: str) -> bool:
+    """Solo acepta correos que terminen en @gmail.com"""
+    return email.lower().endswith("@gmail.com") and len(email) > len("@gmail.com")
+
+def validar_contrasena(contrasena: str) -> tuple[bool, str]:
+    """
+    Valida que la contraseña cumpla los 3 requisitos.
+    Retorna (True, '') si es válida, o (False, mensaje_error) si no.
+    """
+    if len(contrasena) < 6:
+        return False, "Debe tener al menos 6 caracteres."
+    if not re.search(r'[A-Z]', contrasena):
+        return False, "Debe tener al menos 1 letra mayúscula."
+    if not re.search(r'[!#@$%&*]', contrasena):
+        return False, "Debe tener al menos 1 carácter especial (!#@$%&*)."
+    return True, ""
+
+def validar_precio(precio_str: str) -> tuple[bool, float]:
+    """Valida que el precio sea un número positivo y distinto de cero."""
+    try:
+        precio = float(precio_str)
+        if precio <= 0:
+            return False, 0.0
+        return True, precio
+    except ValueError:
+        return False, 0.0
+
+
+class Tooltip:
+    """Cuadro de diálogo que aparece al pasar el mouse sobre un widget."""
+    def __init__(self, widget, texto: str):
+        self.widget = widget
+        self.texto = texto
+        self.ventana_tip = None
+        widget.bind("<Enter>", self._mostrar)
+        widget.bind("<Leave>", self._ocultar)
+
+    def _mostrar(self, event=None):
+        x = self.widget.winfo_rootx() + 25
+        y = self.widget.winfo_rooty() + 25
+
+        self.ventana_tip = tk.Toplevel(self.widget)
+        self.ventana_tip.wm_overrideredirect(True)  # Sin bordes ni barra de título
+        self.ventana_tip.wm_geometry(f"+{x}+{y}")
+
+        label = tk.Label(
+            self.ventana_tip, text=self.texto, justify='left',
+            background="#FFFFE0", relief='solid', borderwidth=1,
+            font=('Helvetica', 9), padx=6, pady=4
+        )
+        label.pack()
+
+    def _ocultar(self, event=None):
+        if self.ventana_tip:
+            self.ventana_tip.destroy()
+            self.ventana_tip = None
+
+# ==========================================
 # FUNCIONALIDAD 1: VENTANA DE LOGIN
 # ==========================================
 class VentanaLogin:
@@ -68,7 +130,7 @@ class FormularioCliente:
 
         self.ventana = tk.Toplevel(parent)
         self.ventana.title("Registrar Nuevo Cliente")
-        self.ventana.geometry("360x280")
+        self.ventana.geometry("360x300")
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
@@ -77,16 +139,26 @@ class FormularioCliente:
 
         ttk.Label(frame, text="Registrar Cliente", font=('Helvetica', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
 
-        campos = [("Nombre:", 'entry_nombre'), ("Email:", 'entry_email'),
-                  ("Dirección:", 'entry_direccion'), ("Contraseña:", 'entry_contrasena')]
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
+        self.entry_nombre = ttk.Entry(frame, width=24)
+        self.entry_nombre.grid(row=1, column=1, pady=4)
 
-        for i, (label, attr) in enumerate(campos, start=1):
-            ttk.Label(frame, text=label).grid(row=i, column=0, sticky='e', padx=5, pady=4)
-            entry = ttk.Entry(frame, width=24, show="*" if attr == 'entry_contrasena' else "")
-            entry.grid(row=i, column=1, pady=4)
-            setattr(self, attr, entry)
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
+        self.entry_email = ttk.Entry(frame, width=24)
+        self.entry_email.grid(row=2, column=1, pady=4)
+        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
 
-        ttk.Button(frame, text="Guardar Cliente", command=self._guardar).grid(row=6, column=0, columnspan=2, pady=12)
+        ttk.Label(frame, text="Dirección:").grid(row=3, column=0, sticky='e', padx=5, pady=4)
+        self.entry_direccion = ttk.Entry(frame, width=24)
+        self.entry_direccion.grid(row=3, column=1, pady=4)
+
+        ttk.Label(frame, text="Contraseña:").grid(row=4, column=0, sticky='e', padx=5, pady=4)
+        self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
+        self.entry_contrasena.grid(row=4, column=1, pady=4)
+        TOOLTIP_CONTRASENA = "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)"
+        Tooltip(self.entry_contrasena, TOOLTIP_CONTRASENA)
+
+        ttk.Button(frame, text="Guardar Cliente", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
 
     def _guardar(self):
         nombre = self.entry_nombre.get().strip()
@@ -96,6 +168,16 @@ class FormularioCliente:
 
         if not all([nombre, email, direccion, contrasena]):
             messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios.", parent=self.ventana)
+            return
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messagebox.showerror("Nombre inválido", "El nombre solo puede contener letras.", parent=self.ventana)
+            return
+        if not validar_email(email):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
+            return
+        valida, error = validar_contrasena(contrasena)
+        if not valida:
+            messagebox.showerror("Contraseña inválida", error, parent=self.ventana)
             return
 
         self.callback_guardar(nombre, email, direccion, contrasena)
@@ -108,7 +190,7 @@ class FormularioRepartidor:
 
         self.ventana = tk.Toplevel(parent)
         self.ventana.title("Registrar Nuevo Repartidor")
-        self.ventana.geometry("360x250")
+        self.ventana.geometry("360x270")
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
@@ -117,16 +199,26 @@ class FormularioRepartidor:
 
         ttk.Label(frame, text="Registrar Repartidor", font=('Helvetica', 12, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
 
-        campos = [("Nombre:", 'entry_nombre'), ("Email:", 'entry_email'),
-                  ("Vehículo:", 'entry_vehiculo'), ("Contraseña:", 'entry_contrasena')]
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
+        self.entry_nombre = ttk.Entry(frame, width=24)
+        self.entry_nombre.grid(row=1, column=1, pady=4)
 
-        for i, (label, attr) in enumerate(campos, start=1):
-            ttk.Label(frame, text=label).grid(row=i, column=0, sticky='e', padx=5, pady=4)
-            entry = ttk.Entry(frame, width=24, show="*" if attr == 'entry_contrasena' else "")
-            entry.grid(row=i, column=1, pady=4)
-            setattr(self, attr, entry)
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
+        self.entry_email = ttk.Entry(frame, width=24)
+        self.entry_email.grid(row=2, column=1, pady=4)
+        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
 
-        ttk.Button(frame, text="Guardar Repartidor", command=self._guardar).grid(row=6, column=0, columnspan=2, pady=12)
+        ttk.Label(frame, text="Vehículo:").grid(row=3, column=0, sticky='e', padx=5, pady=4)
+        self.entry_vehiculo = ttk.Entry(frame, width=24)
+        self.entry_vehiculo.grid(row=3, column=1, pady=4)
+
+        ttk.Label(frame, text="Contraseña:").grid(row=4, column=0, sticky='e', padx=5, pady=4)
+        self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
+        self.entry_contrasena.grid(row=4, column=1, pady=4)
+        TOOLTIP_CONTRASENA = "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)"
+        Tooltip(self.entry_contrasena, TOOLTIP_CONTRASENA)
+
+        ttk.Button(frame, text="Guardar Repartidor", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
 
     def _guardar(self):
         nombre = self.entry_nombre.get().strip()
@@ -136,6 +228,16 @@ class FormularioRepartidor:
 
         if not all([nombre, email, vehiculo, contrasena]):
             messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios.", parent=self.ventana)
+            return
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messagebox.showerror("Nombre inválido", "El nombre solo puede contener letras.", parent=self.ventana)
+            return
+        if not validar_email(email):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
+            return
+        valida, error = validar_contrasena(contrasena)
+        if not valida:
+            messagebox.showerror("Contraseña inválida", error, parent=self.ventana)
             return
 
         self.callback_guardar(nombre, email, vehiculo, contrasena)
@@ -151,7 +253,7 @@ class FormularioRestaurante:
 
         self.ventana = tk.Toplevel(parent)
         self.ventana.title("Registrar Nuevo Restaurante")
-        self.ventana.geometry("420x420")
+        self.ventana.geometry("420x440")
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
@@ -169,8 +271,8 @@ class FormularioRestaurante:
         ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
         self.entry_email = ttk.Entry(frame, width=24)
         self.entry_email.grid(row=2, column=1, pady=4)
+        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
 
-        # Sección para agregar platos al menú (Funcionalidad 4)
         ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=2, sticky='ew', pady=8)
         ttk.Label(frame, text="Agregar platos al menú:", font=('Helvetica', 10, 'bold')).grid(row=4, column=0, columnspan=2)
 
@@ -181,6 +283,7 @@ class FormularioRestaurante:
         ttk.Label(frame, text="Precio ($):").grid(row=6, column=0, sticky='e', padx=5, pady=4)
         self.entry_precio = ttk.Entry(frame, width=24)
         self.entry_precio.grid(row=6, column=1, pady=4)
+        Tooltip(self.entry_precio, "Solo se aceptan números positivos y distintos de cero")
 
         ttk.Button(frame, text="+ Añadir plato", command=self._agregar_plato).grid(row=7, column=0, columnspan=2, pady=4)
 
@@ -190,21 +293,38 @@ class FormularioRestaurante:
         ttk.Button(frame, text="Guardar Restaurante", command=self._guardar).grid(row=9, column=0, columnspan=2, pady=10)
 
     def _agregar_plato(self):
+        nombre_rest = self.entry_nombre.get().strip()
+        email_rest = self.entry_email.get().strip()
         plato = self.entry_plato.get().strip()
         precio_str = self.entry_precio.get().strip()
+
+        if not nombre_rest or not email_rest:
+            messagebox.showwarning("Datos incompletos", "Debes ingresar el nombre y email del restaurante antes de agregar platos.", parent=self.ventana)
+            return
+
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre_rest):
+            messagebox.showerror("Nombre inválido", "El nombre del restaurante solo puede contener letras.", parent=self.ventana)
+            return
+
+        if not validar_email(email_rest):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
+            return
 
         if not plato or not precio_str:
             messagebox.showwarning("Campos vacíos", "Ingresa nombre y precio del plato.", parent=self.ventana)
             return
 
-        # Validación: el precio debe ser un número
-        try:
-            precio = float(precio_str)
-            if precio < 0:
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("Precio inválido", "El precio debe ser un número positivo.", parent=self.ventana)
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', plato):
+            messagebox.showerror("Nombre inválido", "El nombre del plato solo puede contener letras.", parent=self.ventana)
             return
+
+        valido, precio = validar_precio(precio_str)
+        if not valido:
+            messagebox.showerror("Precio inválido", "El precio debe ser un número positivo y distinto de cero.", parent=self.ventana)
+            return
+
+        if precio < 1000:
+            messagebox.showwarning("Precio bajo", f"El precio ${precio:.2f} CLP es inferior a $1.000 CLP.\nSe recomiendan precios iguales o superiores al valor sugerido.", parent=self.ventana)
 
         self.platos_temp.append({'item': plato, 'precio': precio})
         self.lista_platos.insert(tk.END, f"{plato} - ${precio:.2f}")
@@ -217,6 +337,12 @@ class FormularioRestaurante:
 
         if not nombre or not email:
             messagebox.showwarning("Campos vacíos", "Nombre y email son obligatorios.", parent=self.ventana)
+            return
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messagebox.showerror("Nombre inválido", "El nombre solo puede contener letras.", parent=self.ventana)
+            return
+        if not validar_email(email):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
             return
         if not self.platos_temp:
             messagebox.showwarning("Menú vacío", "Agrega al menos un plato al menú.", parent=self.ventana)
@@ -611,14 +737,14 @@ class DeliveryApp:
     # FUNCIONALIDADES 11 Y 12: FORMULARIOS DE EDICIÓN
     # ==========================================
 class FormularioEditarCliente:
-    """[Funcionalidad 11] Edita la dirección de entrega de un cliente."""
+    """[Funcionalidad 11] Edita todos los datos de un cliente."""
     def __init__(self, parent, cliente, callback):
         self.cliente = cliente
         self.callback = callback
 
         self.ventana = tk.Toplevel(parent)
         self.ventana.title(f"Editar Cliente: {cliente.nombre}")
-        self.ventana.geometry("350x180")
+        self.ventana.geometry("360x280")
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
@@ -627,32 +753,68 @@ class FormularioEditarCliente:
 
         ttk.Label(frame, text=f"Editando: {cliente.nombre}", font=('Helvetica', 11, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
 
-        ttk.Label(frame, text="Nueva dirección:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
-        self.entry_direccion = ttk.Entry(frame, width=24)
-        self.entry_direccion.insert(0, cliente.direccionEntrega)  # Muestra valor actual
-        self.entry_direccion.grid(row=1, column=1, pady=5)
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
+        self.entry_nombre = ttk.Entry(frame, width=24)
+        self.entry_nombre.insert(0, cliente.nombre)
+        self.entry_nombre.grid(row=1, column=1, pady=4)
 
-        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=2, column=0, columnspan=2, pady=12)
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
+        self.entry_email = ttk.Entry(frame, width=24)
+        self.entry_email.insert(0, cliente.email)
+        self.entry_email.grid(row=2, column=1, pady=4)
+        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
+
+        ttk.Label(frame, text="Dirección:").grid(row=3, column=0, sticky='e', padx=5, pady=4)
+        self.entry_direccion = ttk.Entry(frame, width=24)
+        self.entry_direccion.insert(0, cliente.direccionEntrega)
+        self.entry_direccion.grid(row=3, column=1, pady=4)
+
+        ttk.Label(frame, text="Contraseña:").grid(row=4, column=0, sticky='e', padx=5, pady=4)
+        self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
+        self.entry_contrasena.insert(0, cliente.contraseña)
+        self.entry_contrasena.grid(row=4, column=1, pady=4)
+        Tooltip(self.entry_contrasena, "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)")
+
+        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
 
     def _guardar(self):
-        nueva_direccion = self.entry_direccion.get().strip()
-        if not nueva_direccion:
-            messagebox.showwarning("Campo vacío", "La dirección no puede estar vacía.", parent=self.ventana)
+        nombre = self.entry_nombre.get().strip()
+        email = self.entry_email.get().strip()
+        direccion = self.entry_direccion.get().strip()
+        contrasena = self.entry_contrasena.get().strip()
+
+        if not all([nombre, email, direccion, contrasena]):
+            messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios.", parent=self.ventana)
             return
-        self.cliente.actualizar_direccion(nueva_direccion)
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messagebox.showerror("Nombre inválido", "El nombre solo puede contener letras.", parent=self.ventana)
+            return
+        if not validar_email(email):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
+            return
+        valida, error = validar_contrasena(contrasena)
+        if not valida:
+            messagebox.showerror("Contraseña inválida", error, parent=self.ventana)
+            return
+
+        self.cliente.nombre = nombre
+        self.cliente.email = email
+        self.cliente.actualizar_direccion(direccion)
+        self.cliente.contraseña = contrasena
+        print(f"[*] Cliente '{nombre}' actualizado correctamente.")
         self.callback()
         self.ventana.destroy()
 
 
 class FormularioEditarRepartidor:
-    """[Funcionalidad 11] Edita el vehículo de un repartidor."""
+    """[Funcionalidad 11] Edita todos los datos de un repartidor."""
     def __init__(self, parent, repartidor, callback):
         self.repartidor = repartidor
         self.callback = callback
 
         self.ventana = tk.Toplevel(parent)
         self.ventana.title(f"Editar Repartidor: {repartidor.nombre}")
-        self.ventana.geometry("350x180")
+        self.ventana.geometry("360x280")
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
@@ -661,62 +823,111 @@ class FormularioEditarRepartidor:
 
         ttk.Label(frame, text=f"Editando: {repartidor.nombre}", font=('Helvetica', 11, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 12))
 
-        ttk.Label(frame, text="Nuevo vehículo:").grid(row=1, column=0, sticky='e', padx=5, pady=5)
-        self.entry_vehiculo = ttk.Entry(frame, width=24)
-        self.entry_vehiculo.insert(0, repartidor.vehiculo)  # Muestra valor actual
-        self.entry_vehiculo.grid(row=1, column=1, pady=5)
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
+        self.entry_nombre = ttk.Entry(frame, width=24)
+        self.entry_nombre.insert(0, repartidor.nombre)
+        self.entry_nombre.grid(row=1, column=1, pady=4)
 
-        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=2, column=0, columnspan=2, pady=12)
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
+        self.entry_email = ttk.Entry(frame, width=24)
+        self.entry_email.insert(0, repartidor.email)
+        self.entry_email.grid(row=2, column=1, pady=4)
+        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
+
+        ttk.Label(frame, text="Vehículo:").grid(row=3, column=0, sticky='e', padx=5, pady=4)
+        self.entry_vehiculo = ttk.Entry(frame, width=24)
+        self.entry_vehiculo.insert(0, repartidor.vehiculo)
+        self.entry_vehiculo.grid(row=3, column=1, pady=4)
+
+        ttk.Label(frame, text="Contraseña:").grid(row=4, column=0, sticky='e', padx=5, pady=4)
+        self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
+        self.entry_contrasena.insert(0, repartidor.contraseña)
+        self.entry_contrasena.grid(row=4, column=1, pady=4)
+        Tooltip(self.entry_contrasena, "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)")
+
+        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
 
     def _guardar(self):
-        nuevo_vehiculo = self.entry_vehiculo.get().strip()
-        if not nuevo_vehiculo:
-            messagebox.showwarning("Campo vacío", "El vehículo no puede estar vacío.", parent=self.ventana)
+        nombre = self.entry_nombre.get().strip()
+        email = self.entry_email.get().strip()
+        vehiculo = self.entry_vehiculo.get().strip()
+        contrasena = self.entry_contrasena.get().strip()
+
+        if not all([nombre, email, vehiculo, contrasena]):
+            messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios.", parent=self.ventana)
             return
-        self.repartidor.vehiculo = nuevo_vehiculo
-        print(f"[*] Perfil Actualizado: Repartidor {self.repartidor.nombre} cambió su vehículo a '{nuevo_vehiculo}'.")
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messagebox.showerror("Nombre inválido", "El nombre solo puede contener letras.", parent=self.ventana)
+            return
+        if not validar_email(email):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
+            return
+        valida, error = validar_contrasena(contrasena)
+        if not valida:
+            messagebox.showerror("Contraseña inválida", error, parent=self.ventana)
+            return
+
+        self.repartidor.nombre = nombre
+        self.repartidor.email = email
+        self.repartidor.vehiculo = vehiculo
+        self.repartidor.contraseña = contrasena
+        print(f"[*] Repartidor '{nombre}' actualizado correctamente.")
         self.callback()
         self.ventana.destroy()
 
 
 class FormularioEditarMenu:
-    """[Funcionalidad 12] Edita los precios de los platos del menú de un restaurante."""
+    """[Funcionalidad 12] Edita nombre, email y precios del menú de un restaurante."""
     def __init__(self, parent, restaurante, callback):
         self.restaurante = restaurante
         self.callback = callback
 
         self.ventana = tk.Toplevel(parent)
-        self.ventana.title(f"Editar Menú: {restaurante.nombre}")
-        self.ventana.geometry("400x350")
+        self.ventana.title(f"Editar Restaurante: {restaurante.nombre}")
+        self.ventana.geometry("420x450")
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
         frame = ttk.Frame(self.ventana, padding=20)
         frame.pack(fill='both', expand=True)
 
-        ttk.Label(frame, text=f"Menú de {restaurante.nombre}", font=('Helvetica', 11, 'bold')).pack(pady=(0, 10))
+        ttk.Label(frame, text=f"Editando: {restaurante.nombre}", font=('Helvetica', 11, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 10))
 
-        # Treeview del menú editable
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
+        self.entry_nombre = ttk.Entry(frame, width=24)
+        self.entry_nombre.insert(0, restaurante.nombre)
+        self.entry_nombre.grid(row=1, column=1, pady=4)
+
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
+        self.entry_email = ttk.Entry(frame, width=24)
+        self.entry_email.insert(0, restaurante.email)
+        self.entry_email.grid(row=2, column=1, pady=4)
+        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
+
+        ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=2, sticky='ew', pady=8)
+        ttk.Label(frame, text="Editar precio de plato:", font=('Helvetica', 10, 'bold')).grid(row=4, column=0, columnspan=2)
+
         columnas = ('Plato', 'Precio Actual')
-        self.tree_menu = ttk.Treeview(frame, columns=columnas, show='headings', height=6)
+        self.tree_menu = ttk.Treeview(frame, columns=columnas, show='headings', height=5)
         self.tree_menu.heading('Plato', text='Plato')
         self.tree_menu.heading('Precio Actual', text='Precio Actual')
         self.tree_menu.column('Plato', width=200)
         self.tree_menu.column('Precio Actual', width=110, anchor='center')
-        self.tree_menu.pack(fill='x')
+        self.tree_menu.grid(row=5, column=0, columnspan=2, pady=4)
 
         for item in restaurante.menu:
             self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']:.2f}"))
 
-        # Campos para editar precio
         frame_editar = ttk.Frame(frame)
-        frame_editar.pack(fill='x', pady=10)
+        frame_editar.grid(row=6, column=0, columnspan=2, pady=6)
 
         ttk.Label(frame_editar, text="Nuevo precio ($):").pack(side='left', padx=5)
         self.entry_precio = ttk.Entry(frame_editar, width=12)
         self.entry_precio.pack(side='left', padx=5)
-
+        Tooltip(self.entry_precio, "Solo se aceptan números positivos y distintos de cero")
         ttk.Button(frame_editar, text="Actualizar precio", command=self._actualizar_precio).pack(side='left', padx=5)
+
+        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=7, column=0, columnspan=2, pady=10)
 
     def _actualizar_precio(self):
         seleccion = self.tree_menu.selection()
@@ -725,24 +936,47 @@ class FormularioEditarMenu:
             return
 
         precio_str = self.entry_precio.get().strip()
-        try:
-            nuevo_precio = float(precio_str)
-            if nuevo_precio < 0:
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("Precio inválido", "Ingresa un número positivo.", parent=self.ventana)
+        valido, nuevo_precio = validar_precio(precio_str)
+        if not valido:
+            messagebox.showerror("Precio inválido", "El precio debe ser un número positivo y distinto de cero.", parent=self.ventana)
             return
+
+        if nuevo_precio < 1000:
+            messagebox.showwarning(
+                "Precio bajo",
+                f"El precio ${nuevo_precio:.2f} CLP es inferior a $1.000 CLP.\nSe recomiendan precios iguales o superiores al valor sugerido.",
+                parent=self.ventana
+            )
 
         nombre_plato = self.tree_menu.item(seleccion[0], 'values')[0]
         self.restaurante.modificar_item(nombre_plato, nuevo_precio)
 
-        # Refrescar el treeview del menú
         self.tree_menu.delete(*self.tree_menu.get_children())
         for item in self.restaurante.menu:
             self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']:.2f}"))
 
         self.entry_precio.delete(0, tk.END)
-        self.callback()    
+        self.callback()
+
+    def _guardar(self):
+        nombre = self.entry_nombre.get().strip()
+        email = self.entry_email.get().strip()
+
+        if not nombre or not email:
+            messagebox.showwarning("Campos vacíos", "Nombre y email son obligatorios.", parent=self.ventana)
+            return
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$', nombre):
+            messagebox.showerror("Nombre inválido", "El nombre solo puede contener letras.", parent=self.ventana)
+            return
+        if not validar_email(email):
+            messagebox.showerror("Email inválido", "El email debe terminar en @gmail.com.", parent=self.ventana)
+            return
+
+        self.restaurante.nombre = nombre
+        self.restaurante.email = email
+        print(f"[*] Restaurante '{nombre}' actualizado correctamente.")
+        self.callback()
+        self.ventana.destroy()    
 
 
 if __name__ == "__main__":
