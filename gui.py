@@ -525,7 +525,7 @@ class DeliveryApp:
         restaurante = self.facade.registrar_restaurante(self._nuevo_id(), nombre, email, menu)
         self.combo_restaurantes['values'] = [r.nombre for r in self.facade.restaurantes]
         self._actualizar_treeview()
-        print(f"[*] Creado: {restaurante.obtenerDatos()}"))
+        print(f"[*] Creado: {restaurante.obtenerDatos()}")
 
     def _abrir_form_repartidor(self):
         FormularioRepartidor(self.root, self._guardar_repartidor)
