@@ -2,9 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
 
-from backend.logica_negocio import GestorPedidos
-from backend.usuarios import UsuarioFactory, Pedido
-from backend.interfaces import PagoTarjeta, PagoPaypal
+from backend.facade import SistemaDeliveryFacade
 
 
 # ==========================================
@@ -373,22 +371,14 @@ class DeliveryApp:
         self.root.geometry("850x650")
         self.root.withdraw()
 
-        self.clientes = []
-        self.restaurantes = []
-        self.repartidores = []
         self.carrito = []
-        self._id_counter = 1  # Contador para IDs únicos
+        self._id_counter = 1 
+        
+        # Instanciamos el FACADE
+        self.facade = SistemaDeliveryFacade()
 
-        self.gestor = GestorPedidos()
-
-        # Usuario de prueba para el login
-        usuario_prueba = UsuarioFactory.crear_usuario(
-            "Cliente", id=0, nombre="admin", email="admin@mail.com",
-            direccion="Admin", contraseña="1234"
-        )
-        self.gestor.registrar_usuario_sistema(usuario_prueba)
-
-        VentanaLogin(self.gestor, self._abrir_panel)
+        # El login ahora usa el facade
+        VentanaLogin(self.facade, self._abrir_panel)
 
     def _abrir_panel(self, rol: str):
         self.root.deiconify()
@@ -473,15 +463,15 @@ class DeliveryApp:
         """Refresca la tabla con todos los usuarios registrados en tiempo real."""
         self.tree_usuarios.delete(*self.tree_usuarios.get_children())
 
-        for c in self.clientes:
+        for c in self.facade.clientes:
             self.tree_usuarios.insert('', tk.END, values=(
                 c.id, c.nombre, 'Cliente', c.email, f"Dir: {c.direccionEntrega}"
             ))
-        for r in self.restaurantes:
+        for r in self.facade.restaurantes:
             self.tree_usuarios.insert('', tk.END, values=(
                 r.id, r.nombre, 'Restaurante', r.email, f"{len(r.menu)} platos en menú"
             ))
-        for rep in self.repartidores:
+        for rep in self.facade.repartidores:
             estado = "Disponible" if rep.disponible else "Ocupado"
             self.tree_usuarios.insert('', tk.END, values=(
                 rep.id, rep.nombre, 'Repartidor', rep.email, f"{rep.vehiculo} | {estado}"
@@ -502,17 +492,17 @@ class DeliveryApp:
         rol = valores[2]
 
         if rol == 'Cliente':
-            usuario = next((c for c in self.clientes if c.id == id_usuario), None)
+            usuario = next((c for c in self.facade.clientes if c.id == id_usuario), None)
             if usuario:
                 FormularioEditarCliente(self.root, usuario, self._post_edicion)
 
         elif rol == 'Repartidor':
-            usuario = next((r for r in self.repartidores if r.id == id_usuario), None)
+            usuario = next((r for r in self.facade.repartidores if r.id == id_usuario), None)
             if usuario:
                 FormularioEditarRepartidor(self.root, usuario, self._post_edicion)
 
         elif rol == 'Restaurante':
-            usuario = next((r for r in self.restaurantes if r.id == id_usuario), None)
+            usuario = next((r for r in self.facade.restaurantes if r.id == id_usuario), None)
             if usuario:
                 FormularioEditarMenu(self.root, usuario, self._post_edicion)
 
@@ -526,7 +516,7 @@ class DeliveryApp:
             "Cliente", id=self._nuevo_id(), nombre=nombre,
             email=email, direccion=direccion, contraseña=contrasena
         )
-        self.clientes.append(cliente)
+        self.facade.clientes.append(cliente)
         self.gestor.registrar_usuario_sistema(cliente)
         self._actualizar_treeview()  # Refresca la tabla automáticamente
         print(f"[*] Creado: {cliente.obtenerDatos()}")
@@ -539,8 +529,8 @@ class DeliveryApp:
             "Restaurante", id=self._nuevo_id(), nombre=nombre,
             email=email, menu=menu
         )
-        self.restaurantes.append(restaurante)
-        self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes]
+        self.facade.restaurantes.append(restaurante)
+        self.combo_restaurantes['values'] = [r.nombre for r in self.facade.restaurantes]
         self._actualizar_treeview()  # Refresca la tabla automáticamente
         print(f"[*] Creado: {restaurante.obtenerDatos()}")
 
@@ -552,7 +542,7 @@ class DeliveryApp:
             "Repartidor", id=self._nuevo_id(), nombre=nombre,
             email=email, vehiculo=vehiculo, contraseña=contrasena
         )
-        self.repartidores.append(repartidor)
+        self.facade.repartidores.append(repartidor)
         self._actualizar_treeview()  # Refresca la tabla automáticamente
         print(f"[*] Creado: {repartidor.obtenerDatos()}")
 
@@ -601,7 +591,7 @@ class DeliveryApp:
     def _cargar_menu(self, event):
         self.lista_menu.delete(0, tk.END)
         nombre_rest = self.combo_restaurantes.get()
-        restaurante = next((r for r in self.restaurantes if r.nombre == nombre_rest), None)
+        restaurante = next((r for r in self.facade.restaurantes if r.nombre == nombre_rest), None)
         if restaurante:
             for item in restaurante.menu:
                 self.lista_menu.insert(tk.END, f"{item['item']} - ${item['precio']}")
@@ -613,7 +603,7 @@ class DeliveryApp:
             return
         index = seleccion[0]
         nombre_rest = self.combo_restaurantes.get()
-        restaurante = next((r for r in self.restaurantes if r.nombre == nombre_rest), None)
+        restaurante = next((r for r in self.facade.restaurantes if r.nombre == nombre_rest), None)
         if restaurante:
             item = restaurante.menu[index]
             self.carrito.append(item)
@@ -642,16 +632,16 @@ class DeliveryApp:
         print("[-] Carrito vaciado completamente.")
 
     def _procesar_pedido(self):
-        if not self.clientes or not self.repartidores:
+        if not self.facade.clientes or not self.facade.repartidores:
             messagebox.showwarning("Atención", "Debes registrar al menos un Cliente y un Repartidor.")
             return
         if not self.carrito:
             messagebox.showwarning("Atención", "El carrito está vacío.")
             return
 
-        cliente = self.clientes[0]
+        cliente = self.facade.clientes[0]
         nombre_rest = self.combo_restaurantes.get()
-        restaurante = next((r for r in self.restaurantes if r.nombre == nombre_rest), None)
+        restaurante = next((r for r in self.facade.restaurantes if r.nombre == nombre_rest), None)
 
         print("\n--- INICIANDO PROCESO DE COMPRA ---")
         cliente.realizarPedido()
@@ -660,7 +650,7 @@ class DeliveryApp:
         total = pedido.calcularTotal()
         print(f"Total a pagar: ${total:.2f}")
 
-        repartidor = next((r for r in self.repartidores if r.disponible), None)
+        repartidor = next((r for r in self.facade.repartidores if r.disponible), None)
         if repartidor:
             pedido.repartidor = repartidor
             repartidor.disponible = False
