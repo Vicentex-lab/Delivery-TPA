@@ -26,7 +26,7 @@ def validar_contrasena(contrasena: str) -> tuple[bool, str]:
     if not re.search(r'[A-Z]', contrasena):
         return False, "Debe tener al menos 1 letra mayúscula."
     if not re.search(r'[!#@$%&*]', contrasena):
-        return False, "Debe tener al menos 1 carácter especial (!#@$%&*)."
+        return False, "Debe tener al menos 1 carácter no alfanumérico (!#@$%&*)."
     return True, ""
 
 def validar_precio(precio_str: str) -> tuple[bool, float]:
@@ -155,7 +155,7 @@ class FormularioCliente:
         ttk.Label(frame, text="Contraseña:").grid(row=4, column=0, sticky='e', padx=5, pady=4)
         self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
         self.entry_contrasena.grid(row=4, column=1, pady=4)
-        TOOLTIP_CONTRASENA = "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)"
+        TOOLTIP_CONTRASENA = "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter no alfanumérico (!#@$%&*)"
         Tooltip(self.entry_contrasena, TOOLTIP_CONTRASENA)
 
         ttk.Button(frame, text="Guardar Cliente", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
@@ -215,7 +215,7 @@ class FormularioRepartidor:
         ttk.Label(frame, text="Contraseña:").grid(row=4, column=0, sticky='e', padx=5, pady=4)
         self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
         self.entry_contrasena.grid(row=4, column=1, pady=4)
-        TOOLTIP_CONTRASENA = "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)"
+        TOOLTIP_CONTRASENA = "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter no alfanumérico (!#@$%&*)"
         Tooltip(self.entry_contrasena, TOOLTIP_CONTRASENA)
 
         ttk.Button(frame, text="Guardar Repartidor", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
@@ -773,7 +773,7 @@ class FormularioEditarCliente:
         self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
         self.entry_contrasena.insert(0, cliente.contraseña)
         self.entry_contrasena.grid(row=4, column=1, pady=4)
-        Tooltip(self.entry_contrasena, "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)")
+        Tooltip(self.entry_contrasena, "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter no alfanumérico (!#@$%&*)")
 
         ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
 
@@ -843,7 +843,7 @@ class FormularioEditarRepartidor:
         self.entry_contrasena = ttk.Entry(frame, width=24, show="*")
         self.entry_contrasena.insert(0, repartidor.contraseña)
         self.entry_contrasena.grid(row=4, column=1, pady=4)
-        Tooltip(self.entry_contrasena, "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter especial (!#@$%&*)")
+        Tooltip(self.entry_contrasena, "Debe tener al menos 6 caracteres\nDebe tener al menos 1 letra mayúscula\nDebe tener al menos 1 carácter no alfanumérico (!#@$%&*)")
 
         ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=5, column=0, columnspan=2, pady=12)
 
