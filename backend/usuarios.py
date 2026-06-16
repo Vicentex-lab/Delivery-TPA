@@ -37,9 +37,9 @@ class Cliente(Usuario):
     def realizarPedido(self):
         print(f"El cliente {self.nombre} está iniciando un pedido.")
         
-    def actualizar_direccion(self, nueva_direccion: str):
+    def actualizar_direccion(self, nueva_direccion: str): #Al cliente que se modifica, se le cambia la dirección con la escrita en la GUI
         """[Funcionalidad 11] Permite cambiar la dirección de entrega desde la GUI"""
-        self.direccionEntrega = nueva_direccion
+        self.direccionEntrega = nueva_direccion #Actualizar la dirección de entrega anterior a la nueva
         print(f"[*] Perfil Actualizado: Cliente {self.nombre} cambió su dirección a '{nueva_direccion}'.")
         
         
@@ -56,14 +56,16 @@ class Pedido:
         self.repartidor: Optional[Repartidor] = None
         self.items_comprados = items_comprados 
 
-    def calcularTotal(self, tarifa_envio: float = 0.0, propina: float = 0.0) -> float:
+    def calcularTotal(self, tarifa_envio: float = 0.0, propina: float = 0.0) -> float: #La tarifa de envío y la propina son opcionales, si no se especifican, son 0 por defecto; type hint float.
         """
-        [Funcionalidad 13 - Cálculo Avanzado] 
+        [Funcionalidad 13 - Cálculo de precio del pedido] 
         Aplica el Principio SRP calculando el subtotal base de los platos 
-        e inyectando costos extras como el envío y la propina voluntaria.
+        e inyectando costos extras como el envío y la propina voluntaria
+        Usa SRP pues la clase Pedido es la única responsable de conocer sus propios costos y realizar su matemática interna. 
+        La interfaz gráfica no se encarga de sumar los precios de los platos;.
         """
-        self.subtotal = sum(item['precio'] for item in self.items_comprados)
-        self.tarifa_envio = tarifa_envio
+        self.subtotal = sum(item['precio'] for item in self.items_comprados) #Suma los precios de los items comprados y lo almacena
+        self.tarifa_envio = tarifa_envio 
         self.propina = propina
         self.total = self.subtotal + self.tarifa_envio + self.propina
         return self.total
@@ -74,7 +76,7 @@ class Pedido:
         Cambia secuencialmente los estados del pedido: Creado -> Confirmado -> En Preparación -> En Camino -> Entregado.
         Sincroniza de forma automática la disponibilidad del repartidor según la fase.
         """
-        self.estado = nuevo_estado
+        self.estado = nuevo_estado #Actualiza el estado según lo que recibe el método
         print(f"[Pedido #{self.id}] Estado actualizado a: '{self.estado}'")
         
         # Sincronización automática del repartidor asociada al estado del pedido
@@ -104,13 +106,13 @@ class Restaurante(Usuario):
         
     def modificar_item(self, nombre_plato: str, nuevo_precio: float):
         """[Funcionalidad 12] Busca un plato en el menú y actualiza su precio"""
-        for item in self.menu:
-            if item['item'].lower() == nombre_plato.lower():
-                precio_antiguo = item['precio']
-                item['precio'] = nuevo_precio
+        for item in self.menu: 
+            if item['item'].lower() == nombre_plato.lower(): #Pasa el nombre a minúscula para evitar errores
+                precio_antiguo = item['precio'] #Guarda el precio anterior para mostrarlo en el mensaje de cambio
+                item['precio'] = nuevo_precio #Actualiza el precio
                 print(f"[*] Menú Actualizado en {self.nombre}: '{nombre_plato}' cambió de ${precio_antiguo} a ${nuevo_precio}.")
-                return True
-        print(f"[x] Error: No se encontró el plato '{nombre_plato}' en el menú.")
+                return True #Detiene el bucle
+        print(f"[x] Error: No se encontró el plato '{nombre_plato}' en el menú.") #Si no se encuentra el plato, da el mensaje de error
         return False
 
 class Repartidor(Usuario):
