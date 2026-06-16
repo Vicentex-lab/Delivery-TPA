@@ -670,6 +670,8 @@ class DeliveryApp:
             return
 
         metodo = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
+        metodo_con_cargo = CargoServicioDecorator(metodo)
+        self.gestor.configurar_metodo_pago(metodo_con_cargo)
         self.gestor.configurar_metodo_pago(metodo)
         self.gestor.confirmarPedido(pedido, cliente)
         restaurante.prepararPedido(pedido)
