@@ -71,8 +71,8 @@ class Tooltip:
 # FUNCIONALIDAD 1: VENTANA DE LOGIN
 # ==========================================
 class VentanaLogin:
-    def __init__(self, gestor: GestorPedidos, callback_exito):
-        self.gestor = gestor
+    def __init__(self, facade, callback_exito): # Cambiado de gestor a facade
+        self.facade = facade
         self.callback_exito = callback_exito
 
         self.ventana = tk.Toplevel()
@@ -109,7 +109,8 @@ class VentanaLogin:
             messagebox.showwarning("Campos vacíos", "Por favor ingresa usuario y contraseña.", parent=self.ventana)
             return
 
-        rol = self.gestor.validar_login(usuario, contrasena)
+        # Ahora usamos el método del Facade
+        rol = self.facade.login(usuario, contrasena)
 
         if rol:
             self.ventana.destroy()
@@ -512,38 +513,26 @@ class DeliveryApp:
         print("[*] Datos actualizados correctamente.")
 
     def _guardar_cliente(self, nombre, email, direccion, contrasena):
-        cliente = UsuarioFactory.crear_usuario(
-            "Cliente", id=self._nuevo_id(), nombre=nombre,
-            email=email, direccion=direccion, contraseña=contrasena
-        )
-        self.facade.clientes.append(cliente)
-        self.gestor.registrar_usuario_sistema(cliente)
-        self._actualizar_treeview()  # Refresca la tabla automáticamente
+        # El Facade hace todo el trabajo de creación y registro
+        cliente = self.facade.registrar_cliente(self._nuevo_id(), nombre, email, direccion, contrasena)
+        self._actualizar_treeview()
         print(f"[*] Creado: {cliente.obtenerDatos()}")
 
     def _abrir_form_restaurante(self):
         FormularioRestaurante(self.root, self._guardar_restaurante)
 
     def _guardar_restaurante(self, nombre, email, menu):
-        restaurante = UsuarioFactory.crear_usuario(
-            "Restaurante", id=self._nuevo_id(), nombre=nombre,
-            email=email, menu=menu
-        )
-        self.facade.restaurantes.append(restaurante)
+        restaurante = self.facade.registrar_restaurante(self._nuevo_id(), nombre, email, menu)
         self.combo_restaurantes['values'] = [r.nombre for r in self.facade.restaurantes]
-        self._actualizar_treeview()  # Refresca la tabla automáticamente
-        print(f"[*] Creado: {restaurante.obtenerDatos()}")
+        self._actualizar_treeview()
+        print(f"[*] Creado: {restaurante.obtenerDatos()}"))
 
     def _abrir_form_repartidor(self):
         FormularioRepartidor(self.root, self._guardar_repartidor)
 
     def _guardar_repartidor(self, nombre, email, vehiculo, contrasena):
-        repartidor = UsuarioFactory.crear_usuario(
-            "Repartidor", id=self._nuevo_id(), nombre=nombre,
-            email=email, vehiculo=vehiculo, contraseña=contrasena
-        )
-        self.facade.repartidores.append(repartidor)
-        self._actualizar_treeview()  # Refresca la tabla automáticamente
+        repartidor = self.facade.registrar_repartidor(self._nuevo_id(), nombre, email, vehiculo, contrasena)
+        self._actualizar_treeview()
         print(f"[*] Creado: {repartidor.obtenerDatos()}")
 
     # ==========================================
@@ -642,35 +631,26 @@ class DeliveryApp:
         cliente = self.facade.clientes[0]
         nombre_rest = self.combo_restaurantes.get()
         restaurante = next((r for r in self.facade.restaurantes if r.nombre == nombre_rest), None)
+        metodo_pago = self.combo_pago.get() # Capturamos el texto del combobox
 
         print("\n--- INICIANDO PROCESO DE COMPRA ---")
         cliente.realizarPedido()
 
-        pedido = Pedido(id_pedido=self._nuevo_id(), cliente=cliente, restaurante=restaurante, items_comprados=list(self.carrito))
-        total = pedido.calcularTotal()
-        print(f"Total a pagar: ${total:.2f}")
+        # PATRÓN FACADE: Llamamos a 1 sola función en lugar de 10
+        exito, resultado = self.facade.procesar_compra_completa(
+            self._nuevo_id(), cliente, restaurante, list(self.carrito), metodo_pago
+        )
 
-        repartidor = next((r for r in self.facade.repartidores if r.disponible), None)
-        if repartidor:
-            pedido.repartidor = repartidor
-            repartidor.disponible = False
-            print(f"Asignación Automática: Repartidor {repartidor.nombre} asignado.")
+        if exito:
+            pedido = resultado
+            print(f"Total a pagar: ${pedido.total:.2f}")
+            self.carrito.clear()
+            self.lista_carrito.delete(0, tk.END)
+            self._actualizar_historial(pedido)
+            messagebox.showinfo("Éxito", "¡Pedido procesado con éxito! Revisa la consola.")
         else:
-            print("No hay repartidores disponibles.")
-            return
-
-        metodo = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
-        self.gestor.configurar_metodo_pago(metodo)
-        self.gestor.confirmarPedido(pedido, cliente)
-        restaurante.prepararPedido(pedido)
-        pedido.actualizarEstado("En Camino")
-        repartidor.actualizarUbicacion()
-        repartidor.completarEntrega(pedido)
-
-        self.carrito.clear()
-        self.lista_carrito.delete(0, tk.END)
-        self._actualizar_historial(pedido)  # Registra en el historial
-        messagebox.showinfo("Éxito", "¡Pedido procesado con éxito! Revisa la consola.")
+            print(resultado) # Imprime el error si no hay repartidores
+            messagebox.showwarning("Error", resultado)
 
     # ==========================================
     # PESTAÑA 3: HISTORIAL DE TRANSACCIONES
