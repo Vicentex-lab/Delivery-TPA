@@ -350,6 +350,8 @@ class FormularioRestaurante:
 
         self.callback_guardar(nombre, email, self.platos_temp)
         self.ventana.destroy()
+        
+        
 
 
 class ConsolaRedirector:
@@ -377,16 +379,16 @@ class DeliveryApp:
         self.restaurantes = []
         self.repartidores = []
         self.carrito = []
-        self._id_counter = 1  # Contador para IDs únicos
 
         self.gestor = GestorPedidos()
 
-        # Usuario de prueba para el login
-        usuario_prueba = UsuarioFactory.crear_usuario(
-            "Cliente", id=0, nombre="admin", email="admin@mail.com",
-            direccion="Admin", contraseña="1234"
-        )
-        self.gestor.registrar_usuario_sistema(usuario_prueba)
+        #Admin por defecto si no hay otros usuarios
+        if not any(u.nombre == "admin" for u in self.gestor.usuarios_registrados):
+            usuario_prueba = UsuarioFactory.crear_usuario(
+                "Cliente", id=0, nombre="admin", email="admin@gmail.com",
+                direccion="Admin", contraseña="1234"
+            )
+            self.gestor.registrar_usuario_sistema(usuario_prueba)
 
         VentanaLogin(self.gestor, self._abrir_panel)
 
@@ -396,11 +398,25 @@ class DeliveryApp:
         self._crear_interfaz()
         sys.stdout = ConsolaRedirector(self.consola_text)
         print(f"--- SISTEMA DE DELIVERY INICIADO --- Bienvenido, rol: {rol}")
+        
+        # <<< CLASIFICAR USUARIOS EN LAS LISTAS DE LA GUI >>>
+        self.clientes = [u for u in self.gestor.usuarios_registrados if u.rol == "Cliente"]
+        self.restaurantes = [u for u in self.gestor.usuarios_registrados if u.rol == "Restaurante"]
+        self.repartidores = [u for u in self.gestor.usuarios_registrados if u.rol == "Repartidor"]
+        
+        # <<< ACTUALIZAR EL COMBOBOX DE NUEVO PEDIDO >>>
+        if hasattr(self, 'combo_restaurantes'):
+            self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes]
+
+        self._actualizar_treeview()
+        
 
     def _nuevo_id(self):
-        """Genera un ID único incremental para cada entidad creada."""
-        self._id_counter += 1
-        return self._id_counter
+        """Genera un ID único dinámico buscando el número más alto registrado."""
+        if self.gestor.usuarios_registrados:
+            # Busca el ID más alto actual en el backend y le suma 1
+            return max(u.id for u in self.gestor.usuarios_registrados) + 1
+        return 1
 
     def _configurar_estilos(self):
         style = ttk.Style()
@@ -465,27 +481,40 @@ class DeliveryApp:
         self.tree_usuarios.pack(side='left', fill='both', expand=True)
         scrollbar.pack(side='right', fill='y')
 
-        # Botón editar y doble click para editar
-        ttk.Button(frame_tabla, text="✏ Editar seleccionado", command=self._abrir_form_edicion).pack(pady=(8, 0))
+        # CONFIGURACIÓN DE LA TABLA (IMPORTANTE: expand=False)
+        self.tree_usuarios.pack(side='top', fill='both', expand=False) # Cambia True por False
+        scrollbar.pack(side='right', fill='y')
+
+        # --- CONTENEDOR DE BOTONES (Esto hará que aparezcan SÍ O SÍ debajo) ---
+        frame_acciones = ttk.Frame(frame_tabla)
+        frame_acciones.pack(side='top', fill='x', pady=10) # Se pone justo debajo de la tabla
+        
+        # Botones dentro del frame
+        ttk.Button(frame_acciones, text="✏ Editar", command=self._abrir_form_edicion).pack(side='left', padx=10)
+        ttk.Button(frame_acciones, text="🗑 Eliminar", command=self._eliminar_usuario).pack(side='left', padx=10)
+        
         self.tree_usuarios.bind("<Double-1>", lambda e: self._abrir_form_edicion())
-
+        
     def _actualizar_treeview(self):
-        """Refresca la tabla con todos los usuarios registrados en tiempo real."""
-        self.tree_usuarios.delete(*self.tree_usuarios.get_children())
-
-        for c in self.clientes:
-            self.tree_usuarios.insert('', tk.END, values=(
-                c.id, c.nombre, 'Cliente', c.email, f"Dir: {c.direccionEntrega}"
-            ))
-        for r in self.restaurantes:
-            self.tree_usuarios.insert('', tk.END, values=(
-                r.id, r.nombre, 'Restaurante', r.email, f"{len(r.menu)} platos en menú"
-            ))
-        for rep in self.repartidores:
-            estado = "Disponible" if rep.disponible else "Ocupado"
-            self.tree_usuarios.insert('', tk.END, values=(
-                rep.id, rep.nombre, 'Repartidor', rep.email, f"{rep.vehiculo} | {estado}"
-            ))
+        """Limpia la tabla y recarga los usuarios desde el backend."""
+        # 1. Borrar lo que haya actualmente en la tabla
+        for i in self.tree_usuarios.get_children():
+            self.tree_usuarios.delete(i)
+        
+        # 2. Insertar los usuarios actuales del gestor
+        # Llenar la tabla con los usuarios registrados
+        for u in self.gestor.usuarios_registrados:
+            # <<< SI EL USUARIO ES ADMIN, NO LO MUESTRES EN LA TABLA >>>
+            if u.rol == "Admin" or u.nombre.lower() == "admin":
+                continue  # Salta a la siguiente iteración sin agregarlo
+            
+            self.tree_usuarios.insert(
+                "", 
+                tk.END, 
+                values=(u.id, u.nombre, u.rol, u.email)
+            )
+        
+        
 
     def _abrir_form_cliente(self):
         FormularioCliente(self.root, self._guardar_cliente)
@@ -520,6 +549,43 @@ class DeliveryApp:
         """Se llama después de cualquier edición para refrescar el Treeview."""
         self._actualizar_treeview()
         print("[*] Datos actualizados correctamente.")
+        
+    def _eliminar_usuario(self):
+        """Captura el usuario de la tabla y ejecuta el Soft Delete en el backend."""
+        seleccion = self.tree_usuarios.selection()
+        if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona un usuario de la tabla para eliminar.")
+            return
+
+        # Extraer los datos de la fila seleccionada
+        valores = self.tree_usuarios.item(seleccion[0], 'values')
+        id_usuario = int(valores[0])
+        nombre = valores[1]
+        rol = valores[2]
+
+        # 1. Preguntar por seguridad
+        if not messagebox.askyesno("Confirmar", f"¿Seguro que deseas dar de baja a {nombre} ({rol}) del sistema?"):
+            return
+
+        # 2. Llamar al backend (El método que tiene la regla de los pedidos activos)
+        exito = self.gestor.dar_baja_usuario_soft_delete(id_usuario)
+
+        # 3. Reaccionar en la GUI según el resultado
+        if exito:
+            # Si se borró del backend, lo sacamos también de las listas visuales de la RAM
+            if rol == 'Cliente':
+                self.clientes = [c for c in self.clientes if c.id != id_usuario]
+            elif rol == 'Restaurante':
+                self.restaurantes = [r for r in self.restaurantes if r.id != id_usuario]
+                # Actualizar el combobox de la pestaña de pedidos para que no salga
+                self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes] 
+            elif rol == 'Repartidor':
+                self.repartidores = [rep for rep in self.repartidores if rep.id != id_usuario]
+
+            messagebox.showinfo("Éxito", f"El {rol.lower()} '{nombre}' ha sido eliminado exitosamente.")
+            self._actualizar_treeview() # Refresca la tabla para que desaparezca
+        else:
+            messagebox.showerror("Error", f"No se puede eliminar a {nombre}: Tiene pedidos en curso o pendientes.")
 
     def _guardar_cliente(self, nombre, email, direccion, contrasena):
         cliente = UsuarioFactory.crear_usuario(
@@ -537,12 +603,21 @@ class DeliveryApp:
     def _guardar_restaurante(self, nombre, email, menu):
         restaurante = UsuarioFactory.crear_usuario(
             "Restaurante", id=self._nuevo_id(), nombre=nombre,
-            email=email, menu=menu
+            email=email, menu=menu, contraseña="1234"
         )
         self.restaurantes.append(restaurante)
-        self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes]
-        self._actualizar_treeview()  # Refresca la tabla automáticamente
-        print(f"[*] Creado: {restaurante.obtenerDatos()}")
+        
+        # <<< 1. REGISTRAR EN EL GESTOR DEL BACKEND >>>
+        self.gestor.registrar_usuario_sistema(restaurante) 
+        
+        # <<< 2. OBLIGAR A GUARDAR EN EL ARCHIVO JSON >>>
+        self.gestor.guardar_datos_json() 
+
+        if hasattr(self, 'combo_restaurantes'):
+            self.combo_restaurantes['values'] = [r.nombre for r in self.restaurantes]
+            
+        self._actualizar_treeview()
+        print(f"[*] Creado y guardado Restaurante: {restaurante.obtenerDatos()}")
 
     def _abrir_form_repartidor(self):
         FormularioRepartidor(self.root, self._guardar_repartidor)
@@ -553,8 +628,15 @@ class DeliveryApp:
             email=email, vehiculo=vehiculo, contraseña=contrasena
         )
         self.repartidores.append(repartidor)
-        self._actualizar_treeview()  # Refresca la tabla automáticamente
-        print(f"[*] Creado: {repartidor.obtenerDatos()}")
+        
+        # <<< 1. REGISTRAR EN EL GESTOR DEL BACKEND >>>
+        self.gestor.registrar_usuario_sistema(repartidor)
+        
+        # <<< 2. OBLIGAR A GUARDAR EN EL ARCHIVO JSON >>>
+        self.gestor.guardar_datos_json() 
+
+        self._actualizar_treeview()
+        print(f"[*] Creado y guardado Repartidor: {repartidor.obtenerDatos()}")
 
     # ==========================================
     # PESTAÑA 2: NUEVO PEDIDO
@@ -887,57 +969,77 @@ class FormularioEditarRepartidor:
 
 
 class FormularioEditarMenu:
-    """[Funcionalidad 12] Edita nombre, email y precios del menú de un restaurante."""
+    """[Funcionalidad 12] Edita nombre, email y permite añadir/editar precios del menú."""
     def __init__(self, parent, restaurante, callback):
         self.restaurante = restaurante
         self.callback = callback
 
         self.ventana = tk.Toplevel(parent)
         self.ventana.title(f"Editar Restaurante: {restaurante.nombre}")
-        self.ventana.geometry("420x450")
+        self.ventana.geometry("420x550") # Aumenté un poco el alto
         self.ventana.resizable(False, False)
         self.ventana.grab_set()
 
         frame = ttk.Frame(self.ventana, padding=20)
         frame.pack(fill='both', expand=True)
 
+        # --- CAMPOS DE EDICIÓN (NOMBRE/EMAIL) ---
         ttk.Label(frame, text=f"Editando: {restaurante.nombre}", font=('Helvetica', 11, 'bold')).grid(row=0, column=0, columnspan=2, pady=(0, 10))
-
         ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky='e', padx=5, pady=4)
         self.entry_nombre = ttk.Entry(frame, width=24)
         self.entry_nombre.insert(0, restaurante.nombre)
         self.entry_nombre.grid(row=1, column=1, pady=4)
-
         ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky='e', padx=5, pady=4)
         self.entry_email = ttk.Entry(frame, width=24)
         self.entry_email.insert(0, restaurante.email)
         self.entry_email.grid(row=2, column=1, pady=4)
-        Tooltip(self.entry_email, "Solo se aceptan correos @gmail.com")
 
-        ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=2, sticky='ew', pady=8)
-        ttk.Label(frame, text="Editar precio de plato:", font=('Helvetica', 10, 'bold')).grid(row=4, column=0, columnspan=2)
+        # --- SECCIÓN: AÑADIR NUEVO PLATO ---
+        ttk.Separator(frame, orient='horizontal').grid(row=3, column=0, columnspan=2, sticky='ew', pady=10)
+        ttk.Label(frame, text="Añadir nuevo plato:", font=('Helvetica', 10, 'bold')).grid(row=4, column=0, columnspan=2)
+        
+        frame_nuevo = ttk.Frame(frame)
+        frame_nuevo.grid(row=5, column=0, columnspan=2, pady=5)
+        self.entry_nuevo_nombre = ttk.Entry(frame_nuevo, width=15)
+        self.entry_nuevo_nombre.pack(side='left', padx=2)
+        self.entry_nuevo_precio = ttk.Entry(frame_nuevo, width=8)
+        self.entry_nuevo_precio.pack(side='left', padx=2)
+        ttk.Button(frame_nuevo, text="➕", command=self._agregar_plato).pack(side='left', padx=5)
 
+        # --- SECCIÓN: TABLA DE PRECIOS ---
         columnas = ('Plato', 'Precio Actual')
         self.tree_menu = ttk.Treeview(frame, columns=columnas, show='headings', height=5)
         self.tree_menu.heading('Plato', text='Plato')
         self.tree_menu.heading('Precio Actual', text='Precio Actual')
-        self.tree_menu.column('Plato', width=200)
-        self.tree_menu.column('Precio Actual', width=110, anchor='center')
-        self.tree_menu.grid(row=5, column=0, columnspan=2, pady=4)
-
+        self.tree_menu.grid(row=6, column=0, columnspan=2, pady=10)
+        
         for item in restaurante.menu:
             self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']:.2f}"))
 
+        # --- SECCIÓN: ACTUALIZAR PRECIO EXISTENTE ---
         frame_editar = ttk.Frame(frame)
-        frame_editar.grid(row=6, column=0, columnspan=2, pady=6)
-
+        frame_editar.grid(row=7, column=0, columnspan=2, pady=6)
         ttk.Label(frame_editar, text="Nuevo precio ($):").pack(side='left', padx=5)
-        self.entry_precio = ttk.Entry(frame_editar, width=12)
+        self.entry_precio = ttk.Entry(frame_editar, width=10)
         self.entry_precio.pack(side='left', padx=5)
-        Tooltip(self.entry_precio, "Solo se aceptan números positivos y distintos de cero")
-        ttk.Button(frame_editar, text="Actualizar precio", command=self._actualizar_precio).pack(side='left', padx=5)
+        ttk.Button(frame_editar, text="Actualizar seleccionado", command=self._actualizar_precio).pack(side='left', padx=5)
 
-        ttk.Button(frame, text="Guardar cambios", command=self._guardar).grid(row=7, column=0, columnspan=2, pady=10)
+        ttk.Button(frame, text="Guardar cambios finales", command=self._guardar).grid(row=8, column=0, columnspan=2, pady=15)
+
+    def _agregar_plato(self):
+        nombre = self.entry_nuevo_nombre.get().strip()
+        precio_str = self.entry_nuevo_precio.get().strip()
+        
+        valido, precio = validar_precio(precio_str)
+        if nombre and valido:
+            self.restaurante.menu.append({'item': nombre, 'precio': precio})
+            self.tree_menu.insert('', tk.END, values=(nombre, f"${precio:.2f}"))
+            self.entry_nuevo_nombre.delete(0, tk.END)
+            self.entry_nuevo_precio.delete(0, tk.END)
+            print(f"[*] Plato {nombre} añadido al menú.")
+        else:
+            messagebox.showerror("Error", "Nombre inválido o precio incorrecto.")
+
 
     def _actualizar_precio(self):
         seleccion = self.tree_menu.selection()
@@ -960,6 +1062,8 @@ class FormularioEditarMenu:
 
         nombre_plato = self.tree_menu.item(seleccion[0], 'values')[0]
         self.restaurante.modificar_item(nombre_plato, nuevo_precio)
+        
+        GestorPedidos().guardar_datos_json()
 
         self.tree_menu.delete(*self.tree_menu.get_children())
         for item in self.restaurante.menu:
@@ -984,6 +1088,7 @@ class FormularioEditarMenu:
 
         self.restaurante.nombre = nombre
         self.restaurante.email = email
+        GestorPedidos().guardar_datos_json()
         print(f"[*] Restaurante '{nombre}' actualizado correctamente.")
         self.callback()
         self.ventana.destroy()    

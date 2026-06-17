@@ -1,0 +1,44 @@
+[
+    {
+        "id": 0,
+        "nombre": "admin",
+        "email": "admin@gmail.com",
+        "contraseña": "1234",
+        "rol": "Cliente",
+        "direccion": "Admin"
+    },
+    {
+        "id": 1,
+        "nombre": "Nicolás Acuña",
+        "email": "nico@gmail.com",
+        "contraseña": "A1234!",
+        "rol": "Cliente",
+        "direccion": "Eduardo Meyer 1223"
+    },
+    {
+        "id": 2,
+        "nombre": "Papa Johns",
+        "email": "papajohns@gmail.com",
+        "contraseña": "1234",
+        "rol": "Restaurante",
+        "menu": [
+            {
+                "item": "Pizza Simple",
+                "precio": 5000.0
+            },
+            {
+                "item": "Palitos de Aji",
+                "precio": 2000.0
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "nombre": "Juan Pérez",
+        "email": "juan@gmail.com",
+        "contraseña": "Juan123!",
+        "rol": "Repartidor",
+        "vehiculo": "Moto Suzuki",
+        "disponible": true
+    }
+]

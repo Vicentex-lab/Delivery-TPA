@@ -1,7 +1,9 @@
+import json
+import os
 from typing import List, Optional, Dict
 # Importamos las dependencias internas del paquete mediante "relative imports" (.)
 from .interfaces import MetodoPago, SistemaNotificacion
-from .usuarios import Usuario, Cliente, Restaurante, Repartidor, Pedido
+from .usuarios import Usuario, Cliente, Restaurante, Repartidor, Pedido, UsuarioFactory
 
 # ==========================================
 #LÓGICA DE NEGOCIO
@@ -18,6 +20,8 @@ class GestorPedidos:
     usuarios_registrados: List[Usuario]
     # Lista adicional para almacenar el histórico de pedidos del sistema
     historial_pedidos: List[Pedido]
+    
+    ARCHIVO_DATOS = "usuarios_sistema.json"
 
     def __new__(cls):
         if cls._instancia is None:
@@ -26,10 +30,80 @@ class GestorPedidos:
             cls._instancia.notificador = SistemaNotificacion()
             cls._instancia.usuarios_registrados = []
             cls._instancia.historial_pedidos = []  # Almacena todas las órdenes generadas
+            # Cargar datos automáticamente al iniciar el programa
+            cls._instancia.cargar_datos_json()
         return cls._instancia
     
     def registrar_usuario_sistema(self, usuario: Usuario):
         self.usuarios_registrados.append(usuario)
+        self.guardar_datos_json()
+        
+        
+    def guardar_datos_json(self):
+        """Transforma los objetos activos a diccionarios y los guarda en el disco"""
+        lista_serializada = []
+        
+        for u in self.usuarios_registrados:
+            # Estructura base común para todos los usuarios
+            datos_usuario = {
+                "id": u.id,
+                "nombre": u.nombre,
+                "email": u.email,
+                "contraseña": u.contraseña,
+                "rol": u.rol  # Nos servirá para saber qué tipo de objeto recrear
+            }
+            
+            # Añadir atributos específicos según el Rol
+            if u.rol == "Cliente":
+                datos_usuario["direccion"] = u.direccionEntrega
+            elif u.rol == "Restaurante":
+                datos_usuario["menu"] = u.menu
+            elif u.rol == "Repartidor":
+                datos_usuario["vehiculo"] = u.vehiculo
+                datos_usuario["disponible"] = u.disponible
+                
+            lista_serializada.append(datos_usuario)
+            
+        try:
+            with open(self.ARCHIVO_DATOS, "w", encoding="utf-8") as f:
+                json.dump(lista_serializada, f, indent=4, ensure_ascii=False)
+            print("[JSON] Datos guardados exitosamente en el disco.")
+        except Exception as e:
+            print(f"[JSON Error] No se pudieron guardar los datos: {e}")
+
+    def cargar_datos_json(self):
+        if os.path.exists(self.ARCHIVO_DATOS):
+            try:
+                with open(self.ARCHIVO_DATOS, 'r') as f:
+                    datos = json.load(f)
+                    # Limpiamos la lista antes de cargar para evitar duplicados en memoria
+                    self.usuarios_registrados = [] 
+                    for d in datos:
+                        # Reconstruimos el objeto usando la Factory
+                        usuario = UsuarioFactory.crear_usuario(d['rol'], **d)
+                        self.usuarios_registrados.append(usuario)
+            except Exception as e:
+                print(f"Error cargando JSON: {e}")
+
+        try:
+            with open(self.ARCHIVO_DATOS, "r", encoding="utf-8") as f:
+                lista_diccionarios = json.load(f)
+                
+            self.usuarios_registrados = [] # Limpiamos la lista actual en RAM
+            
+            for datos in lista_diccionarios:
+                # Ocupamos tu UsuarioFactory para volver a dar vida a los objetos
+                nuevo_usuario = UsuarioFactory.crear_usuario(tipo=datos["rol"], **datos)
+                
+                # Caso especial: el Repartidor tiene un estado de disponibilidad mutable
+                if datos["rol"] == "Repartidor":
+                    nuevo_usuario.disponible = datos.get("disponible", True)
+                    
+                self.usuarios_registrados.append(nuevo_usuario)
+                
+            print(f"[JSON] Datos cargados con éxito. {len(self.usuarios_registrados)} usuarios restaurados.")
+        except Exception as e:
+            print(f"[JSON Error] Error al cargar el archivo de datos: {e}")
 
 
     #1
@@ -96,7 +170,8 @@ class GestorPedidos:
                 return False
 
         # Si pasa la validación, se remueve de la lista del sistema activo
-        self.usuarios_registrados.remove(usuario_a_eliminar) 
+        self.usuarios_registrados.remove(usuario_a_eliminar)
+        self.guardar_datos_json() 
         print(f"[-] Soft Delete Exitoso: El usuario '{usuario_a_eliminar.nombre}' ha sido dado de baja de los registros activos.")
         return True
 

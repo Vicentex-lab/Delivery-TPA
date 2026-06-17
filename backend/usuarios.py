@@ -147,14 +147,22 @@ class UsuarioFactory:
     """
     @staticmethod
     def crear_usuario(tipo: str, **kwargs) -> Usuario:
-        
-        # Buscamos la variable 'contraseña'. Si la GUI no la envía, asignamos '1234'
+        # Aseguramos un ID numérico válido
+        id_user = int(kwargs.get('id', kwargs.get('id_usuario', 0)))
+        nombre = kwargs.get('nombre')
+        email = kwargs.get('email')
         clave = kwargs.get('contraseña', '1234')
         
         if tipo == "Cliente":
-            return Cliente(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs['direccion'], kwargs.get('contraseña', '1234')) #si no hay contraseña, asigna una genérica 1234
+            direccion = kwargs.get('direccion', kwargs.get('direccionEntrega', ''))
+            return Cliente(id_user, nombre, email, direccion, clave)
+            
         elif tipo == "Restaurante":
-            return Restaurante(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs.get('menu', []), kwargs.get('contraseña', '1234') )
+            menu = kwargs.get('menu', [])
+            return Restaurante(id_user, nombre, email, menu, clave)
+            
         elif tipo == "Repartidor":
-            return Repartidor(kwargs['id'], kwargs['nombre'], kwargs['email'], kwargs['vehiculo'], kwargs.get('contraseña', '1234'))
-        raise ValueError("Tipo de usuario no soportado.")
+            vehiculo = kwargs.get('vehiculo', '')
+            return Repartidor(id_user, nombre, email, vehiculo, clave)
+            
+        raise ValueError(f"Tipo de usuario desconocido: {tipo}")
