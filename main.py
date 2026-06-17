@@ -1,7 +1,7 @@
 # Importamos lo necesario desde la carpeta backend
 from backend.logica_negocio import GestorPedidos
 from backend.usuarios import UsuarioFactory
-from backend.interfaces import PagoPaypal
+from backend.interfaces import PagoPaypal, CargoServicioDecorator
 
 # ==========================================
 # SCRIPT DE PRUEBA: 20 FUNCIONALIDADES
@@ -65,7 +65,10 @@ if __name__ == "__main__":
     pedido_dinamico.repartidor = repartidor1
     print(f"Estado inicial de {repartidor1.nombre} antes de confirmar: Disponible = {repartidor1.disponible}")
         
-    gestor_sistema.configurar_metodo_pago(PagoPaypal())
+    #gestor_sistema.configurar_metodo_pago(PagoPaypal())
+    pago_base = PagoPaypal()
+    pago_con_cargo = CargoServicioDecorator(pago_base)
+    gestor_sistema.configurar_metodo_pago(pago_con_cargo)
     gestor_sistema.confirmarPedido(pedido_dinamico, cliente1)
     print(f"Estado de {repartidor1.nombre} tras confirmar el pedido: Disponible = {repartidor1.disponible} (Debe ser False)")
         
