@@ -31,14 +31,5 @@
                 "precio": 2000.0
             }
         ]
-    },
-    {
-        "id": 3,
-        "nombre": "Juan Pérez",
-        "email": "juan@gmail.com",
-        "contraseña": "Juan123!",
-        "rol": "Repartidor",
-        "vehiculo": "Moto Suzuki",
-        "disponible": true
     }
 ]
