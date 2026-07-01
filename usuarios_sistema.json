@@ -31,5 +31,27 @@
                 "precio": 2000.0
             }
         ]
+    },
+    {
+        "id": 3,
+        "nombre": "Manuel Montt",
+        "email": "Mmontt@gmail.com",
+        "contraseña": "!234567aaAAa",
+        "rol": "Repartidor",
+        "vehiculo": "ARWGTW-789",
+        "disponible": true
+    },
+    {
+        "id": 4,
+        "nombre": "Zeuz",
+        "email": "Zeus@gmail.com",
+        "contraseña": "1234",
+        "rol": "Restaurante",
+        "menu": [
+            {
+                "item": "Pizza queso",
+                "precio": 200000.0
+            }
+        ]
     }
 ]
