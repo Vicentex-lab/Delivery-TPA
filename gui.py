@@ -421,9 +421,48 @@ class DeliveryApp:
     def _configurar_estilos(self):
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure('TNotebook.Tab', padding=[15, 5], font=('Helvetica', 10, 'bold'))
-        style.configure('TButton', padding=6, font=('Helvetica', 10))
-        style.configure('TLabelframe', font=('Helvetica', 11, 'bold'))
+
+        # PALETA DE COLORES 
+        BG_COLOR = "#2B2B2B"          # Fondo principal oscuro
+        FG_COLOR = "#FFFFFF"          # Texto blanco
+        ACCENT_COLOR = "#FF6B35"      # Naranja 
+        BTN_BG = "#3C3F41"            # Fondo de botones y pestañas inactivas
+        TREE_BG = "#333333"           # Fondo de las tablas
+
+        # 1. Configuración General (Fondo de la ventana y texto)
+        style.configure('.', background=BG_COLOR, foreground=FG_COLOR, font=('Helvetica', 10))
+        self.root.configure(bg=BG_COLOR) # Fondo de la ventana principal
+
+        # 2. Pestañas (Notebook)
+        style.configure('TNotebook', background=BG_COLOR, borderwidth=0)
+        style.configure('TNotebook.Tab', padding=[15, 5], font=('Helvetica', 10, 'bold'), 
+                        background=BTN_BG, foreground=FG_COLOR, borderwidth=0)
+        style.map('TNotebook.Tab', 
+                  background=[('selected', ACCENT_COLOR)],
+                  foreground=[('selected', '#FFFFFF')])
+
+        # 3. Botones
+        style.configure('TButton', padding=6, font=('Helvetica', 10, 'bold'), 
+                        background=BTN_BG, foreground=FG_COLOR, borderwidth=1, bordercolor=BG_COLOR)
+        style.map('TButton', 
+                  background=[('active', ACCENT_COLOR)],
+                  foreground=[('active', '#FFFFFF')])
+
+        # 4. Marcos y Etiquetas (LabelFrames)
+        style.configure('TLabelframe', background=BG_COLOR, bordercolor=BTN_BG, borderwidth=2)
+        style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), 
+                        background=BG_COLOR, foreground=ACCENT_COLOR)
+        
+        # 5. Tablas (Treeview)
+        style.configure('Treeview', background=TREE_BG, foreground=FG_COLOR, 
+                        fieldbackground=TREE_BG, rowheight=30, borderwidth=0)
+        style.configure('Treeview.Heading', background=BTN_BG, foreground=FG_COLOR, 
+                        font=('Helvetica', 10, 'bold'), borderwidth=1)
+        style.map('Treeview', background=[('selected', ACCENT_COLOR)])
+        
+        # 6. Separadores y Combobox
+        style.configure('TSeparator', background=BTN_BG)
+        style.configure('TCombobox', fieldbackground=BTN_BG, background=BTN_BG, foreground=FG_COLOR)
 
     def _crear_interfaz(self):
         notebook = ttk.Notebook(self.root)
@@ -655,7 +694,7 @@ class DeliveryApp:
         # Lista de Menú
         lbl_menu = ttk.LabelFrame(frame_menu, text="Menú Disponible", padding=10)
         lbl_menu.pack(side='left', fill='both', expand=True, padx=5)
-        self.lista_menu = tk.Listbox(lbl_menu, height=8)
+        self.lista_menu = tk.Listbox(lbl_menu, height=8, bg="#333333", fg="#FFFFFF", selectbackground="#FF6B35", borderwidth=0, highlightthickness=1, highlightcolor="#FF6B35")
         self.lista_menu.pack(fill='both', expand=True)
         ttk.Button(lbl_menu, text="Añadir al Carrito ->", command=self._agregar_al_carrito).pack(pady=5)
 
