@@ -463,7 +463,15 @@ class DeliveryApp:
         
         # 6. Separadores y Combobox
         style.configure('TSeparator', background=BTN_BG)
-        style.configure('TCombobox', fieldbackground=BTN_BG, background=BTN_BG, foreground=FG_COLOR)
+        style.configure('TCombobox', fieldbackground='white', background=BTN_BG, foreground='black')
+        style.map('TCombobox', 
+                  fieldbackground=[('readonly', 'white')],
+                  foreground=[('readonly', 'black')],
+                  fieldforeground=[('readonly', 'black')])
+        self.root.option_add('*TCombobox*Listbox.background', 'white')
+        self.root.option_add('*TCombobox*Listbox.foreground', 'black')
+        self.root.option_add('*TCombobox*Listbox.selectBackground', ACCENT_COLOR)
+        self.root.option_add('*TCombobox*Listbox.selectForeground', '#FFFFFF')
 
     def _crear_interfaz(self):
         notebook = ttk.Notebook(self.root)
