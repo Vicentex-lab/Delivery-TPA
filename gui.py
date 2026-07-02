@@ -421,6 +421,7 @@ class DeliveryApp:
     def _configurar_estilos(self):
         style = ttk.Style()
         style.theme_use('clam')
+        style.configure('TEntry', foreground='black', fieldbackground='white')
 
         # PALETA DE COLORES 
         BG_COLOR = "#2B2B2B"          # Fondo principal oscuro
