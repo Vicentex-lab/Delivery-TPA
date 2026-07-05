@@ -66,5 +66,107 @@
                 "precio": 5000.0
             }
         ]
+    },
+    {
+        "id": 5,
+        "estado": "Entregado",
+        "subtotal": 2000.0,
+        "total": 2000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 5,
+        "restaurante_id": 2,
+        "repartidor_id": 3,
+        "items_comprados": [
+            {
+                "item": "Palitos de Ajo",
+                "precio": 2000.0
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "estado": "Confirmado",
+        "subtotal": 2000.0,
+        "total": 2000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 1,
+        "restaurante_id": 2,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "Palitos de Ajo",
+                "precio": 2000.0
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "estado": "Entregado",
+        "subtotal": 200000.0,
+        "total": 200000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 1,
+        "restaurante_id": 4,
+        "repartidor_id": 6,
+        "items_comprados": [
+            {
+                "item": "Pizza queso",
+                "precio": 9500.0
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "estado": "Confirmado",
+        "subtotal": 1200,
+        "total": 1200,
+        "tarifa_envio": 0,
+        "propina": 0,
+        "cliente_id": 1,
+        "restaurante_id": 2,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "puré",
+                "precio": 1200
+            }
+        ]
+    },
+    {
+        "id": 9,
+        "estado": "Confirmado",
+        "subtotal": 9500,
+        "total": 9500,
+        "tarifa_envio": 0,
+        "propina": 0,
+        "cliente_id": 1,
+        "restaurante_id": 4,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "Pizza queso",
+                "precio": 9500
+            }
+        ]
+    },
+    {
+        "id": 10,
+        "estado": "Confirmado",
+        "subtotal": 9500,
+        "total": 9500,
+        "tarifa_envio": 0,
+        "propina": 0,
+        "cliente_id": 1,
+        "restaurante_id": 4,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "Pizza queso",
+                "precio": 9500
+            }
+        ]
     }
 ]

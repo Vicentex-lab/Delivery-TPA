@@ -25,6 +25,17 @@ class RepartidorApp:
         style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
         style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
         style.map('Treeview', background=[('selected', "#FF6B35")])
+        
+        style.configure('TEntry', foreground="#000000", fieldbackground="#FFFFFF")
+        
+        self.root.configure(bg="#2B2B2B")
+        style.configure('TNotebook.Tab', padding=[15, 5], font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF", borderwidth=0)
+        style.map('TNotebook.Tab', background=[('selected', "#FF6B35")])
+        style.configure('TButton', padding=6, font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF")
+        style.configure('TLabelframe', background="#2B2B2B", foreground="#FF6B35")
+        style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
+        style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
+        style.map('Treeview', background=[('selected', "#FF6B35")])
 
     def _crear_interfaz(self):
         header = ttk.Frame(self.root)
@@ -34,12 +45,20 @@ class RepartidorApp:
 
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill='both', expand=True, padx=10, pady=5)
-        self.tab_disp = ttk.Frame(notebook); self.tab_ruta = ttk.Frame(notebook)
-        notebook.add(self.tab_disp, text=' 🔔 Disponibles'); notebook.add(self.tab_ruta, text=' 🛵 Mi Ruta')
+        
+        self.tab_disp = ttk.Frame(notebook)
+        self.tab_ruta = ttk.Frame(notebook)
+        self.tab_historial = ttk.Frame(notebook) # Nueva pestaña
+
+        notebook.add(self.tab_disp, text=' 🔔 Disponibles')
+        notebook.add(self.tab_ruta, text=' 🛵 Mi Ruta')
+        notebook.add(self.tab_historial, text=' 📜 Historial Entregas')
 
         self._construir_tab_disp()
         self._construir_tab_ruta()
+        self._construir_tab_historial() # Nuevo constructor
 
+    # --- PESTAÑA 1: DISPONIBLES ---
     def _construir_tab_disp(self):
         f_acc = ttk.Frame(self.tab_disp)
         f_acc.pack(fill='x', padx=20, pady=(15, 0))
@@ -68,10 +87,12 @@ class RepartidorApp:
         if pedido:
             pedido.repartidor = self.repartidor
             pedido.actualizarEstado("En Camino")
-            self.gestor.guardar_datos_json() # Guarda la disponibilidad
+            self.gestor.guardar_datos_json() 
             self.gestor.guardar_historial_json()
-            self._actualizar_disp(); self._actualizar_ruta()
+            self._actualizar_disp()
+            self._actualizar_ruta()
 
+    # --- PESTAÑA 2: MI RUTA ---
     def _construir_tab_ruta(self):
         f_acc = ttk.Frame(self.tab_ruta)
         f_acc.pack(fill='x', padx=20, pady=(15, 0))
@@ -97,4 +118,30 @@ class RepartidorApp:
             self.repartidor.completarEntrega(pedido)
             self.gestor.guardar_datos_json()
             self.gestor.guardar_historial_json()
-            self._actualizar_ruta(); self._actualizar_disp()
+            self._actualizar_ruta()
+            self._actualizar_disp()
+            self._actualizar_historial() # Refresca el historial
+
+    # --- PESTAÑA 3: HISTORIAL (NUEVA) ---
+    def _construir_tab_historial(self):
+        f_acc = ttk.Frame(self.tab_historial)
+        f_acc.pack(fill='x', padx=20, pady=(15, 0))
+        ttk.Button(f_acc, text="🔄 Refrescar", command=self._actualizar_historial).pack(side='left')
+
+        f_tabla = ttk.LabelFrame(self.tab_historial, text="Mis Pedidos Entregados", padding=10)
+        f_tabla.pack(fill='both', expand=True, padx=20, pady=10)
+        self.tree_hist = ttk.Treeview(f_tabla, columns=('ID', 'Restaurante', 'Cliente', 'Total', 'Estado'), show='headings')
+        
+        for c in ('ID', 'Restaurante', 'Cliente', 'Total', 'Estado'): 
+            self.tree_hist.heading(c, text=c)
+            self.tree_hist.column(c, anchor='center' if c in ['ID', 'Total', 'Estado'] else 'w')
+
+        self.tree_hist.pack(fill='both', expand=True)
+        self._actualizar_historial()
+
+    def _actualizar_historial(self):
+        for i in self.tree_hist.get_children(): self.tree_hist.delete(i)
+        # Filtramos solo los pedidos asignados a este repartidor y que estén completados (Entregados)
+        entregados = [p for p in self.gestor.historial_pedidos if p.repartidor and p.repartidor.id == self.repartidor.id and p.estado == "Entregado"]
+        for p in entregados:
+            self.tree_hist.insert('', tk.END, values=(p.id, p.restaurante.nombre, p.cliente.nombre, f"${p.total}", p.estado))

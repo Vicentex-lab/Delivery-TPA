@@ -16,11 +16,11 @@
         "menu": [
             {
                 "item": "Pizza Simple",
-                "precio": 5000.0
+                "precio": 5000
             },
             {
                 "item": "Palitos de Ajo",
-                "precio": 2000.0
+                "precio": 2000
             }
         ]
     },
@@ -36,13 +36,13 @@
     {
         "id": 4,
         "nombre": "Zeuz",
-        "email": "Zeus@gmail.com",
+        "email": "Ze",
         "contraseña": "1234",
         "rol": "Restaurante",
         "menu": [
             {
                 "item": "Pizza queso",
-                "precio": 200000.0
+                "precio": 9500
             }
         ]
     },

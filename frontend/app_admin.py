@@ -59,6 +59,17 @@ class AdminApp:
         style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
         style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
         style.map('Treeview', background=[('selected', "#FF6B35")])
+        
+        style.configure('TEntry', foreground="#000000", fieldbackground="#FFFFFF")
+        
+        self.root.configure(bg="#2B2B2B")
+        style.configure('TNotebook.Tab', padding=[15, 5], font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF", borderwidth=0)
+        style.map('TNotebook.Tab', background=[('selected', "#FF6B35")])
+        style.configure('TButton', padding=6, font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF")
+        style.configure('TLabelframe', background="#2B2B2B", foreground="#FF6B35")
+        style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
+        style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
+        style.map('Treeview', background=[('selected', "#FF6B35")])
 
     def _nuevo_id(self): return max((u.id for u in self.gestor.usuarios_registrados), default=0) + 1
 
@@ -84,7 +95,9 @@ class AdminApp:
                 self.tree_usuarios.insert("", tk.END, values=(u.id, u.nombre, u.rol, u.email))
 
     def _g_cli(self, n,e,d,c): self.gestor.registrar_usuario_sistema(UsuarioFactory.crear_usuario("Cliente", id=self._nuevo_id(), nombre=n, email=e, direccion=d, contraseña=c)); self._actualizar_treeview()
-    def _g_res(self, n,e,m): self.gestor.registrar_usuario_sistema(UsuarioFactory.crear_usuario("Restaurante", id=self._nuevo_id(), nombre=n, email=e, menu=m, contraseña="1234")); self._actualizar_treeview()
+    def _g_res(self, n, e, m, c): 
+        self.gestor.registrar_usuario_sistema(UsuarioFactory.crear_usuario("Restaurante", id=self._nuevo_id(), nombre=n, email=e, menu=m, contraseña=c))
+        self._actualizar_treeview()
     def _g_rep(self, n,e,v,c): self.gestor.registrar_usuario_sistema(UsuarioFactory.crear_usuario("Repartidor", id=self._nuevo_id(), nombre=n, email=e, vehiculo=v, contraseña=c)); self._actualizar_treeview()
 
     def _ed(self):
@@ -110,7 +123,7 @@ class AdminApp:
     def _actualizar_historial_global(self):
         for i in self.tree_hist.get_children(): self.tree_hist.delete(i)
         for p in self.gestor.historial_pedidos:
-            self.tree_hist.insert('', tk.END, values=(p.id, p.cliente.nombre, p.restaurante.nombre, p.repartidor.nombre if p.repartidor else "N/A", f"${p.total:.2f}", p.estado))
+            self.tree_hist.insert('', tk.END, values=(p.id, p.cliente.nombre, p.restaurante.nombre, p.repartidor.nombre if p.repartidor else "N/A", f"${p.total}", p.estado))
 
     def _construir_tab_consola(self):
         self.consola_text = tk.Text(self.tab_consola, bg="black", fg="#00FF00", font=('Courier', 10), state='disabled', wrap='word')

@@ -1,4 +1,5 @@
 import tkinter as tk
+import sys
 
 from backend.logica_negocio import GestorPedidos
 from backend.usuarios import UsuarioFactory
@@ -36,6 +37,7 @@ class SistemaEnrutador:
         """Callback que fuerza el guardado y vuelve a la pantalla inicial."""
         self.gestor.guardar_datos_json()
         self.gestor.guardar_historial_json()
+        sys.stdout = sys.__stdout__
         print("[-] Sesión cerrada correctamente.")
         self._mostrar_login()
 

@@ -28,6 +28,17 @@ class RestauranteApp:
         style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
         style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
         style.map('Treeview', background=[('selected', "#FF6B35")])
+        
+        style.configure('TEntry', foreground="#000000", fieldbackground="#FFFFFF")
+        
+        self.root.configure(bg="#2B2B2B")
+        style.configure('TNotebook.Tab', padding=[15, 5], font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF", borderwidth=0)
+        style.map('TNotebook.Tab', background=[('selected', "#FF6B35")])
+        style.configure('TButton', padding=6, font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF")
+        style.configure('TLabelframe', background="#2B2B2B", foreground="#FF6B35")
+        style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
+        style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
+        style.map('Treeview', background=[('selected', "#FF6B35")])
 
     def _crear_interfaz(self):
         header = ttk.Frame(self.root)
@@ -124,7 +135,7 @@ class RestauranteApp:
 
     def _actualizar_tabla_menu(self):
         for i in self.tree_menu.get_children(): self.tree_menu.delete(i)
-        for item in self.restaurante.menu: self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']:.2f}"))
+        for item in self.restaurante.menu: self.tree_menu.insert('', tk.END, values=(item['item'], f"${item['precio']}"))
 
     def _agregar_plato(self):
         nom, pr_str = self.entry_nuevo_nombre.get().strip(), self.entry_nuevo_precio.get().strip()

@@ -22,15 +22,15 @@ def validar_contrasena(contrasena: str) -> tuple[bool, str]:
         return False, "Debe tener al menos 1 carácter no alfanumérico (!#@$%&*)."
     return True, ""
 
-def validar_precio(precio_str: str) -> tuple[bool, float]:
+def validar_precio(precio_str: str) -> tuple[bool, int]:
     """Valida que el precio sea un número positivo y distinto de cero."""
     try:
-        precio = float(precio_str)
+        precio = int(precio_str)
         if precio <= 0:
-            return False, 0.0
+            return False, 0
         return True, precio
     except ValueError:
-        return False, 0.0
+        return False, 0
 
 
 class Tooltip:

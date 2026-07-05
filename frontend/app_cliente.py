@@ -39,6 +39,17 @@ class ClienteApp:
         style.configure('Treeview', background=TREE_BG, foreground=FG_COLOR, fieldbackground=TREE_BG, rowheight=30, borderwidth=0)
         style.configure('Treeview.Heading', background=BTN_BG, foreground=FG_COLOR, font=('Helvetica', 10, 'bold'), borderwidth=1)
         style.map('Treeview', background=[('selected', ACCENT_COLOR)])
+        
+        style.configure('TEntry', foreground="#000000", fieldbackground="#FFFFFF")
+        
+        self.root.configure(bg="#2B2B2B")
+        style.configure('TNotebook.Tab', padding=[15, 5], font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF", borderwidth=0)
+        style.map('TNotebook.Tab', background=[('selected', "#FF6B35")])
+        style.configure('TButton', padding=6, font=('Helvetica', 10, 'bold'), background="#3C3F41", foreground="#FFFFFF")
+        style.configure('TLabelframe', background="#2B2B2B", foreground="#FF6B35")
+        style.configure('TLabelframe.Label', font=('Helvetica', 11, 'bold'), background="#2B2B2B", foreground="#FF6B35")
+        style.configure('Treeview', background="#333333", foreground="#FFFFFF", fieldbackground="#333333", rowheight=30)
+        style.map('Treeview', background=[('selected', "#FF6B35")])
 
     def _crear_interfaz(self):
         # Header de Sesión
@@ -165,7 +176,7 @@ class ClienteApp:
     def _actualizar_historial(self):
         for i in self.tree_historial.get_children(): self.tree_historial.delete(i)
         for p in [p for p in self.gestor.historial_pedidos if p.cliente.id == self.cliente.id]:
-            self.tree_historial.insert('', tk.END, values=(f"{p.id}", p.restaurante.nombre, p.repartidor.nombre if p.repartidor else "Pendiente", f"${p.total:.2f}", p.estado))
+            self.tree_historial.insert('', tk.END, values=(f"{p.id}", p.restaurante.nombre, p.repartidor.nombre if p.repartidor else "Pendiente", f"${p.total}", p.estado))
 
     def _cancelar_pedido(self):
         sel = self.tree_historial.selection()
@@ -212,26 +223,26 @@ class ClienteApp:
         pdf.set_font("Arial", size=12)
         for item in pedido.items_comprados:
             pdf.cell(120, 10, item['item'])
-            pdf.cell(40, 10, f"${item['precio']:.2f}", ln=True)
+            pdf.cell(40, 10, f"${item['precio']}", ln=True)
             
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
         pdf.ln(5)
         
         # Resumen de cobros (Incluyendo el Decorator del 5%)
-        cargo_servicio = pedido.total * 0.05
-        total_final = pedido.total + cargo_servicio
+        cargo_servicio = int(pedido.total * 0.05)
+        total_final = int(pedido.total + cargo_servicio)
 
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(120, 10, "Subtotal (Platos):")
-        pdf.cell(40, 10, f"${pedido.total:.2f}", ln=True)
+        pdf.cell(40, 10, f"${pedido.total}", ln=True)
         
         pdf.cell(120, 10, "Cargo por servicio App (5%):")
-        pdf.cell(40, 10, f"${cargo_servicio:.2f}", ln=True)
+        pdf.cell(40, 10, f"${cargo_servicio}", ln=True)
         
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 14)
         pdf.cell(120, 10, "TOTAL PAGADO:")
-        pdf.cell(40, 10, f"${total_final:.2f}", ln=True)
+        pdf.cell(40, 10, f"${total_final}", ln=True)
         
         # Guardar archivo
         nombre_archivo = f"Boleta_Pedido_{pedido.id}_{pedido.cliente.nombre.replace(' ', '_')}.pdf"
