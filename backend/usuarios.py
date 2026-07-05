@@ -114,6 +114,14 @@ class Restaurante(Usuario):
                 return True #Detiene el bucle
         print(f"[x] Error: No se encontró el plato '{nombre_plato}' en el menú.") #Si no se encuentra el plato, da el mensaje de error
         return False
+    
+    def modificar_plato(self, nombre_antiguo: str, nuevo_nombre: str, nuevo_precio: float):
+        """Busca un plato y actualiza tanto su nombre como su precio."""
+        for p in self.menu:
+            if p['item'] == nombre_antiguo:
+                p['item'] = nuevo_nombre
+                p['precio'] = float(nuevo_precio)
+                break
 
 class Repartidor(Usuario):
     def __init__(self, id_usuario: int, nombre: str, email: str, vehiculo: str, contraseña: str = "1234"):

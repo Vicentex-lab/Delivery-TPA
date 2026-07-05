@@ -1,0 +1,70 @@
+[
+    {
+        "id": 1,
+        "estado": "Rechazado",
+        "subtotal": 2000.0,
+        "total": 2000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 1,
+        "restaurante_id": 2,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "Palitos de Ajo",
+                "precio": 2000.0
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "estado": "Cancelado",
+        "subtotal": 5000.0,
+        "total": 5000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 1,
+        "restaurante_id": 2,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "Pizza Simple",
+                "precio": 5000.0
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "estado": "Entregado",
+        "subtotal": 5000.0,
+        "total": 5000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 1,
+        "restaurante_id": 2,
+        "repartidor_id": 3,
+        "items_comprados": [
+            {
+                "item": "Pizza Simple",
+                "precio": 5000.0
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "estado": "Confirmado",
+        "subtotal": 5000.0,
+        "total": 5000.0,
+        "tarifa_envio": 0.0,
+        "propina": 0.0,
+        "cliente_id": 1,
+        "restaurante_id": 2,
+        "repartidor_id": null,
+        "items_comprados": [
+            {
+                "item": "Pizza Simple",
+                "precio": 5000.0
+            }
+        ]
+    }
+]

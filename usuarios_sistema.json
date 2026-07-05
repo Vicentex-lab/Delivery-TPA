@@ -8,14 +8,6 @@
         "direccion": "Admin"
     },
     {
-        "id": 1,
-        "nombre": "Nicolás Acuña",
-        "email": "nico@gmail.com",
-        "contraseña": "A1234!",
-        "rol": "Cliente",
-        "direccion": "Eduardo Meyer 1223"
-    },
-    {
         "id": 2,
         "nombre": "Papa Johns",
         "email": "papajohns@gmail.com",
@@ -36,7 +28,7 @@
         "id": 3,
         "nombre": "Manuel Montt",
         "email": "Mmontt@gmail.com",
-        "contraseña": "!234567aaAAa",
+        "contraseña": "1234",
         "rol": "Repartidor",
         "vehiculo": "ARWGTW-789",
         "disponible": true
@@ -53,5 +45,13 @@
                 "precio": 200000.0
             }
         ]
+    },
+    {
+        "id": 1,
+        "nombre": "Antonia",
+        "email": "antonia@mail.com",
+        "contraseña": "1234",
+        "rol": "Cliente",
+        "direccion": "Nueva Avenida Diagonal 456"
     }
 ]
