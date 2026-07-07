@@ -138,8 +138,13 @@ class ClienteApp:
         nuevo_id = len(self.gestor.historial_pedidos) + 1 
         pedido = Pedido(id_pedido=nuevo_id, cliente=self.cliente, restaurante=rest, items_comprados=list(self.carrito))
         pedido.calcularTotal()
+        # =========================================================================
+        # PATRÓN STRATEGY: Selección dinámica de la Estrategia Concreta
+        # Dependiendo de la selección del usuario en la GUI, instanciamos la estrategia adecuada.
+        # =========================================================================
 
         metodo_base = PagoTarjeta() if self.combo_pago.get() == "Tarjeta de Crédito" else PagoPaypal()
+        # Inyectamos la Estrategia seleccionada al Contexto (pasando además por el Decorador)
         self.gestor.configurar_metodo_pago(CargoServicioDecorator(metodo_base))
         self.gestor.confirmarPedido(pedido, self.cliente)
         

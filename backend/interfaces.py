@@ -4,6 +4,16 @@ from abc import ABC, abstractmethod
 # INTERFACES Y CLASES ABSTRACTAS (DIP y OCP)
 # ==========================================
 
+
+# PATRÓN DE COMPORTAMIENTO: STRATEGY (ESTRATEGIA)
+# =========================================================================
+# Componente: Estrategia Abstracta (Strategy Interface)
+# Define la interfaz común para todos los algoritmos de pago soportados.
+# Permite aplicar el principio Open/Closed (OCP).
+# =========================================================================
+
+
+
 class MetodoPago(ABC):
     """
     [Principio OCP] Abierto a extension pero cerrado a modificacion
@@ -15,11 +25,19 @@ class MetodoPago(ABC):
     def procesarPago(self, monto: int) -> bool:
         pass
 
+# =========================================================================
+# Componente: Estrategia Concreta A (Concrete Strategy)
+# Encapsula un algoritmo específico de pago mediante Tarjeta de Crédito.
+# =========================================================================
+
 class PagoTarjeta(MetodoPago):
     def procesarPago(self, monto: int) -> bool:
         print(f"Procesando pago de ${monto} mediante Tarjeta de Crédito...")
         return True 
-
+# =========================================================================
+# Componente: Estrategia Concreta B (Concrete Strategy)
+# Encapsula un algoritmo específico de pago mediante PayPal.
+# =========================================================================
 class PagoPaypal(MetodoPago):
     def procesarPago(self, monto: int) -> bool:
         print(f"Procesando pago de ${monto} mediante PayPal...")

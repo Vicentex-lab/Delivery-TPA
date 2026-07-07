@@ -10,9 +10,10 @@ from .usuarios import Usuario, Cliente, Restaurante, Repartidor, Pedido, Usuario
 
 class GestorPedidos:
     """
-    [Patrón Singleton] Garantiza una única instancia del gestor de pedidos.
+    [Patrón Creacional: Singleton] Garantiza una única instancia del gestor de pedidos.
+    [Patrón de Comportamiento: Strategy - Contexto] Mantiene una referencia a un objeto 
+    Estrategia (MetodoPago) y se comunica con él de forma polimórfica.
     """
-    
     _instancia = None
     usuarios_registrados: List[Usuario]
     historial_pedidos: List[Pedido]
@@ -126,7 +127,10 @@ class GestorPedidos:
             if usuario.nombre == nombre_usuario and usuario.contraseña == contraseña_ingresada: 
                 return usuario.rol 
         return None
-
+    # =========================================================================
+    # Componente: Inyección de la Estrategia (Strategy Injection)
+    # Permite cambiar dinámicamente el algoritmo de pago en tiempo de ejecución.
+    # =========================================================================
     def configurar_metodo_pago(self, metodo: MetodoPago):
         self.procesadorPago = metodo
 
@@ -139,6 +143,11 @@ class GestorPedidos:
     def confirmarPedido(self, pedido: Pedido, cliente: Cliente): 
         if not self.procesadorPago: 
             raise ValueError("Error: Método de pago no configurado.")
+        # =========================================================================
+        # Componente: Ejecución de la Estrategia (Polimorfismo Puro)
+        # El Contexto delega la responsabilidad del comportamiento al objeto Estrategia.
+        # GestorPedidos no sabe si es Tarjeta o PayPal, solo sabe que responde a 'procesarPago'.
+        # =========================================================================
         
         pago_exitoso = self.procesadorPago.procesarPago(pedido.total) 
         if pago_exitoso: 
