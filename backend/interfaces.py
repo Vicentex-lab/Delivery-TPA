@@ -12,17 +12,17 @@ class MetodoPago(ABC):
     sin tocar el GestorPedidos. Así no modificamos código ya funcional.
     """
     @abstractmethod
-    def procesarPago(self, monto: float) -> bool:
+    def procesarPago(self, monto: int) -> bool:
         pass
 
 class PagoTarjeta(MetodoPago):
-    def procesarPago(self, monto: float) -> bool:
-        print(f"Procesando pago de ${monto:.2f} mediante Tarjeta de Crédito...")
+    def procesarPago(self, monto: int) -> bool:
+        print(f"Procesando pago de ${monto} mediante Tarjeta de Crédito...")
         return True 
 
 class PagoPaypal(MetodoPago):
-    def procesarPago(self, monto: float) -> bool:
-        print(f"Procesando pago de ${monto:.2f} mediante PayPal...")
+    def procesarPago(self, monto: int) -> bool:
+        print(f"Procesando pago de ${monto} mediante PayPal...")
         return True 
     
 class SistemaNotificacion:
@@ -37,7 +37,7 @@ class MetodoPagoDecorator(MetodoPago):
     def __init__(self, metodo_base: MetodoPago):
         self._metodo_base = metodo_base
 
-    def procesarPago(self, monto: float) -> bool:
+    def procesarPago(self, monto: int) -> bool:
         return self._metodo_base.procesarPago(monto)
 
 class CargoServicioDecorator(MetodoPagoDecorator):
@@ -45,7 +45,7 @@ class CargoServicioDecorator(MetodoPagoDecorator):
     [Patrón Estructural: Decorator] 
     Decorador concreto que añade dinámicamente un cargo por servicio del 5%.
     """
-    def procesarPago(self, monto: float) -> bool:
-        monto_con_cargo = monto * 1.05
-        print(f"[*] Patrón Decorator: Aplicando 5% de cargo por servicio app. Monto final: ${monto_con_cargo:.2f}")
+    def procesarPago(self, monto: int) -> bool:
+        monto_con_cargo = int(monto * 1.05)
+        print(f"[*] Patrón Decorator: Aplicando 5% de cargo por servicio app. Monto final: ${monto_con_cargo}")
         return super().procesarPago(monto_con_cargo)

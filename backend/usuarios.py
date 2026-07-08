@@ -56,7 +56,7 @@ class Pedido:
         self.repartidor: Optional[Repartidor] = None
         self.items_comprados = items_comprados 
 
-    def calcularTotal(self, tarifa_envio: float = 0.0, propina: float = 0.0) -> float: #La tarifa de envío y la propina son opcionales, si no se especifican, son 0 por defecto; type hint float.
+    def calcularTotal(self, tarifa_envio: int = 0, propina: int = 0) -> int: #La tarifa de envío y la propina son opcionales, si no se especifican, son 0 por defecto; type hint int.
         """
         [Funcionalidad 13 - Cálculo de precio del pedido] 
         Aplica el Principio SRP calculando el subtotal base de los platos 
@@ -104,7 +104,7 @@ class Restaurante(Usuario):
         pedido.actualizarEstado("En Preparación")
         
         
-    def modificar_item(self, nombre_plato: str, nuevo_precio: float):
+    def modificar_item(self, nombre_plato: str, nuevo_precio: int):
         """[Funcionalidad 12] Busca un plato en el menú y actualiza su precio"""
         for item in self.menu: 
             if item['item'].lower() == nombre_plato.lower(): #Pasa el nombre a minúscula para evitar errores
@@ -114,6 +114,20 @@ class Restaurante(Usuario):
                 return True #Detiene el bucle
         print(f"[x] Error: No se encontró el plato '{nombre_plato}' en el menú.") #Si no se encuentra el plato, da el mensaje de error
         return False
+    
+    def modificar_plato(self, nombre_antiguo: str, nuevo_nombre: str, nuevo_precio: int):
+        """Busca un plato y actualiza tanto su nombre como su precio."""
+        for p in self.menu:
+            if p['item'] == nombre_antiguo:
+                p['item'] = nuevo_nombre
+                p['precio'] = int(nuevo_precio)
+                break
+            
+    def eliminar_plato(self, nombre_plato: str):
+        """Elimina un plato del menú buscando por su nombre."""
+        # Filtramos la lista para quedarnos con todos los platos MENOS el que queremos borrar
+        self.menu = [p for p in self.menu if p['item'] != nombre_plato]
+        print(f"[*] Plato '{nombre_plato}' eliminado del menú de {self.nombre}.")
 
 class Repartidor(Usuario):
     def __init__(self, id_usuario: int, nombre: str, email: str, vehiculo: str, contraseña: str = "1234"):
